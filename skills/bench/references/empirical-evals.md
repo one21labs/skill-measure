@@ -28,8 +28,11 @@ Complementary, not alternatives:
 | Cost verdict | the skill-measure plugin's `scripts/eval_verdict.py` | Does the delta justify the skill's chars? |
 
 Execution runs natively (`/bench skill`) or DELEGATED to skill-creator's benchmark mode (paired
-arms, graded assertions, token/time stats). Either way skill-measure adds what upstream lacks: the cost-per-benefit verdict with a confidence interval (the
-evals.json schema gate is one21tools' validate.py R7, dev-skills plugin).
+arms, graded assertions, token/time stats). Either way skill-measure adds what upstream lacks:
+the cost-per-benefit verdict with a confidence interval.
+
+`/bench skill` takes its own eval list (`[{id, task, expectations[]}]`) and prints its own
+KEEP/CUT (SKILL.md); the schema, running, and verdict steps below are the skill-creator route.
 
 ## Setup
 
@@ -124,7 +127,7 @@ bounded by (2)/(4), not eliminated. Treat those verdict components as directiona
 Post-process the harness's `benchmark.json` with the owned layer:
 
 ```
-python "${CLAUDE_PLUGIN_ROOT}/scripts/eval_verdict.py" <benchmark.json> --skill <skill-folder> [--practical <bar>]
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/eval_verdict.py" <benchmark.json> --skill <skill-folder> [--practical <bar>]
 ```
 
 It pairs each eval's runs across configurations and reports:
