@@ -1,9 +1,8 @@
 # Empirical Evals — measure that a skill earns its context cost
 
 Read this when a skill needs empirical evidence, not authoring guidance (that is
-evaluation-patterns.md, **dev-skills plugin**). The repo's claim is "token efficiency
-enforced, not aspirational" — char budgets enforce the COST side; this protocol measures the
-BENEFIT side. Together: a skill is justified when its measured effect is worth its chars.
+evaluation-patterns.md, **dev-skills plugin**). A skill's COST side is its chars, which a
+budget can enforce (one21tools does); this protocol measures the BENEFIT side. Together: a skill is justified when its measured effect is worth its chars.
 
 ## Table of Contents
 
@@ -29,9 +28,9 @@ Complementary, not alternatives:
 | Cost verdict | the skill-measure plugin's `scripts/eval_verdict.py` | Does the delta justify the skill's chars? |
 
 Execution is DELEGATED: skill-creator's benchmark mode already runs paired
-with_skill/without_skill configurations with graded assertions and token/time stats. This repo
-owns only what upstream lacks: the schema gate (validate.py R7) and the cost-per-benefit
-verdict with a confidence interval.
+with_skill/without_skill configurations with graded assertions and token/time stats. skill-measure
+owns only what upstream lacks: the cost-per-benefit verdict with a confidence interval (the
+evals.json schema gate is one21tools' validate.py R7, dev-skills plugin).
 
 ## Setup
 
@@ -45,9 +44,8 @@ evaluation-patterns.md (dev-skills plugin); the protocol below assumes the harne
 Pre-run discipline (pre-reg cites methodology; cost-pilot; prior-art): [pre-registration.md](pre-registration.md).
 
 Write `evals/evals.json` in the skill folder, in **skill-creator's schema** — its
-`references/schemas.md` is the schema SSoT; `skills/code-standards/evals/evals.json`
-(dev-skills plugin, not shipped with skill-measure) is a live example. `validate.py` owns and
-gates the shape.
+`references/schemas.md` is the schema SSoT; one21labs/one21tools:skills/code-standards/evals/evals.json
+(dev-skills plugin) is a live example. one21tools' `validate.py` owns and gates the shape.
 
 Disciplines:
 
@@ -150,8 +148,8 @@ It pairs each eval's runs across configurations and reports:
   justify ANY chars; a positive verdict ranks skills by value density.
 
 `--fail-under <delta>` exits nonzero below a floor — for local regression checks when
-iterating on a skill. It is NOT a CI gate: benchmark runs are non-deterministic, so gates.yml
-runs only `eval_verdict_test.py` (the deterministic decision logic), never the benchmark.
+iterating on a skill. It is NOT a CI gate: benchmark runs are non-deterministic, so CI (`ci.yml`)
+runs only the deterministic `*_test.py` decision logic, never the benchmark.
 
 ## Result snapshots
 

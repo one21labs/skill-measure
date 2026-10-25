@@ -17,7 +17,7 @@ than no measurement because it carries evidential authority.
 
 ## The recorded instances (2026-07-26, one session, one experiment)
 
-An experiment comparing this repo's `building-skills` against a third-party skill went through
+An experiment comparing one21tools' `building-skills` against a third-party skill went through
 four drafts. Three separate cross-family adversarial rounds each found the same shape:
 
 1. **Measured the competitor with our own convention.** Content inventory taken by globbing

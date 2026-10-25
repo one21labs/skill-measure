@@ -13,7 +13,7 @@ Full factorial designs over many sections multiply run cost fast; ablate the few
 you actually doubt, and only for skills whose cost makes the answer worth buying.
 
 The same method applies to **any always-loaded prose**, not just a SKILL.md — a repo `CLAUDE.md`
-or the pdca-init `claude-md-template.md` it seeds. These pay their cost on EVERY request, so
+or the template one21tools' pdca-init seeds (one21labs/one21tools:pdca-workflow/skills/pdca-init/references/claude-md-template.md). These pay their cost on EVERY request, so
 ablation matters more; vary the prose per variant over a small task set the section targets.
 **Hold the executor's base framing NEUTRAL** — prose ablation is framing-sensitive: a biased
 framing swamps the treatment (one section measured +0.17/0.00/+0.375 across

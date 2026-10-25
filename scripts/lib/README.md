@@ -1,6 +1,6 @@
-# skill-measure/scripts/lib
+# scripts/lib
 
-Shared helpers for benchmark harnesses (ADR 0026; moved from `benchmarks/lib`, #170 M1).
+Shared helpers for benchmark harnesses (ADR 0026; moved from one21tools' `benchmarks/lib`, #170 M1).
 Stdlib only. Run any module's tests from this dir: `python3 <module>_test.py`.
 
 Convention: a derived/regenerable intermediate (a prep script's output that duplicates committed
@@ -50,7 +50,7 @@ its home is the script that regenerates it, not git.
   (one retry on timeout/nonzero exit) and `summarize_call(call)` (envelope figures + wall-clock +
   start/end timestamps), plus the per-cell grid mechanics `fresh_copy(src)` and
   `capture_artifacts(workdir, src)` (#191: capture for EVERY arm, never pre-existing corpus
-  files). New harnesses import this; never copy it — start from `skill-measure/templates/grid.py`.
+  files). New harnesses import this; never copy it — start from `templates/grid.py`.
   The two pre-#110 harnesses keep their copies as append-only snapshots.
 
 ## artifact_check.py / blind.py / benchstats.py (#191 hardening)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test-class reachability guard (#194 item 1). Stdlib only, pure core + thin CLI.
 
-gates.yml runs *_test.py files in SCRIPT mode (`python3 <file>`), so a test class defined
+ci.yml runs *_test.py files in SCRIPT mode (`python3 <file>`), so a test class defined
 below the `if __name__ == "__main__": unittest.main()` block is never collected — the file
 reads green forever while its tests silently don't run. Nothing verifies a test file is
 even wired since 2026-07-27 (#311); this guard checks only that a wired file's contents
