@@ -1,7 +1,7 @@
 # Empirical Evals — measure that a skill earns its context cost
 
 Read this when a skill needs empirical evidence, not authoring guidance (that is
-evaluation-patterns.md, **dev-skills plugin**). A skill's COST side is its chars, which a
+one21labs/one21tools:skills/building-skills/references/evaluation-patterns.md, **dev-skills plugin**). A skill's COST side is its chars, which a
 budget can enforce (one21tools does); this protocol measures the BENEFIT side. Together: a skill is justified when its measured effect is worth its chars.
 
 ## Table of Contents
@@ -24,20 +24,17 @@ Complementary, not alternatives:
 | Layer | Owner | Answers |
 |-------|-------|---------|
 | Pressure testing | eval authoring (below; method from obra/superpowers) | Can the agent rationalize its way around the skill under pressure? |
-| Paired benchmark | Anthropic skill-creator harness (delegated — ADR 0013) | Does the skill measurably beat the no-skill baseline? |
+| Paired benchmark | `/bench skill` (native), or Anthropic skill-creator's harness (delegated — ADR 0013) | Does the skill measurably beat the no-skill baseline? |
 | Cost verdict | the skill-measure plugin's `scripts/eval_verdict.py` | Does the delta justify the skill's chars? |
 
-Execution is DELEGATED: skill-creator's benchmark mode already runs paired
-with_skill/without_skill configurations with graded assertions and token/time stats. skill-measure
-owns only what upstream lacks: the cost-per-benefit verdict with a confidence interval (the
+Execution runs natively (`/bench skill`) or DELEGATED to skill-creator's benchmark mode (paired
+arms, graded assertions, token/time stats). Either way skill-measure adds what upstream lacks: the cost-per-benefit verdict with a confidence interval (the
 evals.json schema gate is one21tools' validate.py R7, dev-skills plugin).
 
 ## Setup
 
-Install skill-creator from Anthropic's agent-skills marketplace (`anthropics/skills` on
-GitHub; it is NOT bundled with Claude Code and NOT shipped by this marketplace). No
-skill-creator available = fall back to the manual baseline steps in
-evaluation-patterns.md (dev-skills plugin); the protocol below assumes the harness.
+skill-creator route: install it from `anthropics/skills` on GitHub (not bundled with Claude Code, not
+shipped here). Without it, use `/bench skill`.
 
 ## Authoring evals
 
@@ -84,6 +81,7 @@ task is a guaranteed tie that dilutes the delta and burns grading budget). Two g
 reps never count toward the verdict (selected tasks partly regress on re-measure), and report the
 gradient-subset delta beside the full-battery delta (sensitive signal vs conservative bound).
 
+skill-creator route, from its checkout:
 ```
 python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
 ```

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decision-logic tests for contamination sweeps (CLAUDE.md: no gating script without a test).
+"""Decision-logic tests for contamination sweeps (one21tools' CLAUDE.md: no gating script without a test).
 Offline: temp dirs and synthetic records only."""
 import os
 import subprocess

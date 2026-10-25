@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Decision-logic tests for the substrate adapter's pure functions (config build + output parse).
-No promptfoo/network. CLAUDE.md: no script ships without a test of its decision logic."""
+No promptfoo/network. one21tools' CLAUDE.md: no script ships without a test of its decision logic."""
 import os, stat, sys, tempfile, unittest
 
 sys.path.insert(0, os.path.dirname(__file__))

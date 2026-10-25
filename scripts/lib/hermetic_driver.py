@@ -2,7 +2,7 @@
 """Shared hermetic `claude -p` driver for benchmark harnesses (ADR 0023, issue #110).
 
 One home for the executor plumbing every hermetic benchmark harness needs -- import this instead
-of copying it (issue #110). Stdlib only. The two pre-#110 harnesses
+of copying it (issue #110). Stdlib only. The two pre-#110 harnesses in one21tools' benchmarks/
 (2026-07-10-tiered-execution-fullgrid/harness.py, 2026-07-10-routing-escalation/checker_harness.py)
 are append-only snapshots and keep their copies.
 
@@ -12,7 +12,7 @@ The hermetic pattern (ADR 0023):
   - prompt on stdin; NEUTRAL_FRAME as the prompt-level counterpart of the deny list
   - every call run from an empty scratch cwd OUTSIDE the repo checkout (CLAUDE_CONFIG_DIR does
     not stop project-level CLAUDE.md auto-discovery by cwd traversal -- verified empirically,
-    see the fullgrid README)
+    see one21tools' benchmarks/2026-07-10-tiered-execution-fullgrid/README.md)
 
 Every call result carries start/end UTC timestamps so pre-registration-precedes-run is readable
 off the records themselves, not only off git commit ordering.

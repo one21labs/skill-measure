@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decision-logic tests for the bench-verdict math + judge-divergence (CLAUDE.md: never ship a
+"""Decision-logic tests for the bench-verdict math + judge-divergence (one21tools' CLAUDE.md: never ship a
 process-gating script without a test of its decision logic). Pure/offline; no judge calls."""
 import os, pathlib, sys, unittest
 
