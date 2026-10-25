@@ -20,7 +20,7 @@ was declined — machinery without dollars.
 
 **The initial estimate is DERIVED, never guessed (retired ADR 0076):** take the most recent
 measured $/cell for the same judge/model from a prior committed `metadata.json` cost block (grep
-`benchmarks/*/metadata.json` for `actuals`); no prior exists → run the 2-cell pilot BEFORE
+your own `benchmarks/*/metadata.json` for `actuals`); no prior exists → run the 2-cell pilot BEFORE
 recording any number. Three guessed estimates missed by 2-17x (ADR 0061; PR #219; PR #227). A
 mechanical warn is the named escalation if guessing recurs despite this rule.
 

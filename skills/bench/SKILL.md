@@ -58,7 +58,7 @@ vendored trigger runner (ADR 0033) on a flat eval set of `{query, should_trigger
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run_eval.py" --eval-set <path> --skill-path <dir> \
-  --model <pinned-model> --num-workers 1 --timeout 240 --yes \
+  --model <pinned-model> --num-workers 1 --timeout 240 --runs-per-query 1 --yes \
   [--description "<variant text>"]
 ```
 

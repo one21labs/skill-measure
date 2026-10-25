@@ -155,7 +155,7 @@ runs only the deterministic `*_test.py` decision logic, never the benchmark.
 ## Result snapshots
 
 Benchmark verdicts are model- and eval-relative and the raw runs are ephemeral, so append a
-dated machine-readable snapshot under `benchmarks/` after each run (ADR 0019) — a `.jsonl` of
+dated machine-readable snapshot under your repo's `benchmarks/` after each run (ADR 0019) — a `.jsonl` of
 per-cell verdict records plus a `metadata.json`: executor model, eval-set content hash,
 protocol/ADR version, blinded (y/n), **hermetic (y/n)**, the denominator basis, and (when raw is
 retained) the `sample_rule`. JSON/JSONL is the SSoT; any markdown view is rendered from it, never

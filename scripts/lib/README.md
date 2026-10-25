@@ -20,8 +20,8 @@ its home is the script that regenerates it, not git.
 
 ## benchstats.py — the verdict rule (use this)
 
-- `keep_verdict(delta, practical=0.0)` — the verdict rule (table: `skills/bench/references/
-  cost-and-verdict.md`; rationale: the docstring). Also returns `half_width`, `mde80`, `win_rate`.
+- `keep_verdict(delta, practical=0.0)` — the verdict rule (table:
+  `skills/bench/references/cost-and-verdict.md`; rationale: the docstring). Also returns `half_width`, `mde80`, `win_rate`.
 - `sd_between(delta)` / `clusters_for(sd, target)` — recover the between-scenario spread from a
   completed run, and size the next one from it rather than from a guess. A pre-registration states
   both the practical bar and the resulting scenario count.
