@@ -75,7 +75,7 @@ holding normalization fixed so the judge family was the only changed variable. F
 
 The same-family judge was lenient **and** hid the panel's edge (the exp-2 "falsifiable criterion"
 ceiling at 0.88-flat under opus broke to C 0.83 / B 0.54 under grok). The judge changed the verdict,
-so the judge is a first-class, reported variable. `--judge both` gives the divergence diagnostic;
+so the judge is a first-class, reported variable. `/bench verdict --judge both` gives the divergence diagnostic;
 `skills/bench/references/judging.md` owns which backend `auto` resolves to and how to wire your own.
 
 ### grok CLI notes (installed build 0.2.99; docs lag the binary)

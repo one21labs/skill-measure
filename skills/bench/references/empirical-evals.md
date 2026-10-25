@@ -150,7 +150,7 @@ It pairs each eval's runs across configurations and reports:
 
 `--fail-under <delta>` exits nonzero below a floor — for local regression checks when
 iterating on a skill. It is NOT a CI gate: benchmark runs are non-deterministic, so CI (`ci.yml`)
-runs only the deterministic `*_test.py` decision logic, never the benchmark.
+runs only deterministic checks (unit tests, manifest validation), never the benchmark.
 
 ## Result snapshots
 
