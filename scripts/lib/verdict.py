@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """FROZEN 2026-07-27 — the HISTORICAL verdict rule. Do not use it for new work.
 
-Dated aggregators under `benchmarks/2026-07-*` import `verdict_of`, and those dirs are
+Dated aggregators under one21labs/one21tools:benchmarks/2026-07-* import `verdict_of`, and those dirs are
 append-only records (ADR 0041): the frozen literal IS the record, so changing this function would
 make a re-run disagree with what was published. It therefore stays exactly as it was.
 
@@ -38,7 +38,7 @@ def merge_verdict(mean_diff, ci_lo, ci_hi, n, chars_delta):
     always-loaded/body chars only — not the full reference-inclusive treatment, ADR 0027):
     `chars_delta <= 0` (cost flat or down) keeps the weak merge; `chars_delta > 0` (benefit flat
     while always-loaded chars rise) reverts to NO MERGE. Without this prong, `aggregate.py` printed
-    "MERGE (weak)" for `benchmarks/2026-07-09-bs-iter2-remeasure/` (+0.002 mean, CI
+    "MERGE (weak)" for one21labs/one21tools:benchmarks/2026-07-09-bs-iter2-remeasure/ (+0.002 mean, CI
     [-0.137, +0.140], +187 always-loaded chars) where the settled bar says NO MERGE.
 
     Returns (merge: bool, confidence: "strong" | "weak" | None).

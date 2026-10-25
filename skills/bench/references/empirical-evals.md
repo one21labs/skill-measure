@@ -1,9 +1,8 @@
 # Empirical Evals — measure that a skill earns its context cost
 
 Read this when a skill needs empirical evidence, not authoring guidance (that is
-evaluation-patterns.md, **dev-skills plugin**). The repo's claim is "token efficiency
-enforced, not aspirational" — char budgets enforce the COST side; this protocol measures the
-BENEFIT side. Together: a skill is justified when its measured effect is worth its chars.
+one21labs/one21tools:skills/building-skills/references/evaluation-patterns.md, **dev-skills plugin**). A skill's COST side is its chars, which a
+budget can enforce (one21tools does); this protocol measures the BENEFIT side. Together: a skill is justified when its measured effect is worth its chars.
 
 ## Table of Contents
 
@@ -25,29 +24,28 @@ Complementary, not alternatives:
 | Layer | Owner | Answers |
 |-------|-------|---------|
 | Pressure testing | eval authoring (below; method from obra/superpowers) | Can the agent rationalize its way around the skill under pressure? |
-| Paired benchmark | Anthropic skill-creator harness (delegated — ADR 0013) | Does the skill measurably beat the no-skill baseline? |
+| Paired benchmark | `/bench skill` (native), or Anthropic skill-creator's harness (delegated — ADR 0013) | Does the skill measurably beat the no-skill baseline? |
 | Cost verdict | the skill-measure plugin's `scripts/eval_verdict.py` | Does the delta justify the skill's chars? |
 
-Execution is DELEGATED: skill-creator's benchmark mode already runs paired
-with_skill/without_skill configurations with graded assertions and token/time stats. This repo
-owns only what upstream lacks: the schema gate (validate.py R7) and the cost-per-benefit
-verdict with a confidence interval.
+Execution runs natively (`/bench skill`) or DELEGATED to skill-creator's benchmark mode (paired
+arms, graded assertions, token/time stats). Either way skill-measure adds what upstream lacks:
+the cost-per-benefit verdict with a confidence interval.
+
+`/bench skill` takes its own eval list (`[{id, task, expectations[]}]`) and prints its own
+KEEP/CUT (SKILL.md); the schema, running, and verdict steps below are the skill-creator route.
 
 ## Setup
 
-Install skill-creator from Anthropic's agent-skills marketplace (`anthropics/skills` on
-GitHub; it is NOT bundled with Claude Code and NOT shipped by this marketplace). No
-skill-creator available = fall back to the manual baseline steps in
-evaluation-patterns.md (dev-skills plugin); the protocol below assumes the harness.
+skill-creator route: install it from `anthropics/skills` on GitHub (not bundled with Claude Code, not
+shipped here). Without it, use `/bench skill`.
 
 ## Authoring evals
 
 Pre-run discipline (pre-reg cites methodology; cost-pilot; prior-art): [pre-registration.md](pre-registration.md).
 
 Write `evals/evals.json` in the skill folder, in **skill-creator's schema** — its
-`references/schemas.md` is the schema SSoT; `skills/code-standards/evals/evals.json`
-(dev-skills plugin, not shipped with skill-measure) is a live example. `validate.py` owns and
-gates the shape.
+`references/schemas.md` is the schema SSoT; one21labs/one21tools:skills/code-standards/evals/evals.json
+(dev-skills plugin) is a live example. one21tools' `validate.py` owns and gates the shape.
 
 Disciplines:
 
@@ -86,6 +84,7 @@ task is a guaranteed tie that dilutes the delta and burns grading budget). Two g
 reps never count toward the verdict (selected tasks partly regress on re-measure), and report the
 gradient-subset delta beside the full-battery delta (sensitive signal vs conservative bound).
 
+skill-creator route, from its checkout:
 ```
 python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
 ```
@@ -128,7 +127,7 @@ bounded by (2)/(4), not eliminated. Treat those verdict components as directiona
 Post-process the harness's `benchmark.json` with the owned layer:
 
 ```
-python "${CLAUDE_PLUGIN_ROOT}/scripts/eval_verdict.py" <benchmark.json> --skill <skill-folder> [--practical <bar>]
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/eval_verdict.py" <benchmark.json> --skill <skill-folder> [--practical <bar>]
 ```
 
 It pairs each eval's runs across configurations and reports:
@@ -150,13 +149,13 @@ It pairs each eval's runs across configurations and reports:
   justify ANY chars; a positive verdict ranks skills by value density.
 
 `--fail-under <delta>` exits nonzero below a floor — for local regression checks when
-iterating on a skill. It is NOT a CI gate: benchmark runs are non-deterministic, so gates.yml
-runs only `eval_verdict_test.py` (the deterministic decision logic), never the benchmark.
+iterating on a skill. It is NOT a CI gate: benchmark runs are non-deterministic, so CI (`ci.yml`)
+runs only deterministic checks (unit tests, manifest validation), never the benchmark.
 
 ## Result snapshots
 
 Benchmark verdicts are model- and eval-relative and the raw runs are ephemeral, so append a
-dated machine-readable snapshot under `benchmarks/` after each run (ADR 0019) — a `.jsonl` of
+dated machine-readable snapshot under your repo's `benchmarks/` after each run (ADR 0019) — a `.jsonl` of
 per-cell verdict records plus a `metadata.json`: executor model, eval-set content hash,
 protocol/ADR version, blinded (y/n), **hermetic (y/n)**, the denominator basis, and (when raw is
 retained) the `sample_rule`. JSON/JSONL is the SSoT; any markdown view is rendered from it, never

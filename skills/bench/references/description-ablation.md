@@ -82,7 +82,7 @@ looks are diagnostic (empirical-evals.md, Running the benchmark).
 
 ## Result snapshots
 
-Append a dated, machine-readable `.jsonl` under `benchmarks/<date>/` per run — one record per
+Append a dated, machine-readable `.jsonl` under your repo's `benchmarks/<date>/` per run — one record per
 (description variant, query): query, should_trigger, trigger_rate, timeouts, pass — plus a
 `metadata.json` (skill, variant text, model, num-workers, timeout, `CLAUDE_CONFIG_DIR` pinned
 y/n). Append-only, per empirical-evals.md's Result snapshots.

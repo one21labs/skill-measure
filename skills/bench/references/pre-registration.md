@@ -72,7 +72,7 @@ exclusion rate is an infrastructure defect to fix before grading, not signal.
   from a prior run's measured spread rather than guessed (ADR 0076 applied to power). A grid
   sized below it can only return INCONCLUSIVE — spend with a known-null outcome.
 
-## Sizing, at this repo's measured spread of 0.24
+## Sizing, at one21tools' measured spread of 0.24
 
 | To reliably call | scenarios (80% power) |
 |---|---|

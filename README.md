@@ -75,7 +75,7 @@ holding normalization fixed so the judge family was the only changed variable. F
 
 The same-family judge was lenient **and** hid the panel's edge (the exp-2 "falsifiable criterion"
 ceiling at 0.88-flat under opus broke to C 0.83 / B 0.54 under grok). The judge changed the verdict,
-so the judge is a first-class, reported variable. `--judge both` gives the divergence diagnostic;
+so the judge is a first-class, reported variable. `/bench verdict --judge both` gives the divergence diagnostic;
 `skills/bench/references/judging.md` owns which backend `auto` resolves to and how to wire your own.
 
 ### grok CLI notes (installed build 0.2.99; docs lag the binary)
@@ -101,8 +101,8 @@ ADR 0058). What a consumer must provide / knows:
 - **Invoke via `${CLAUDE_PLUGIN_ROOT}`:** the `/bench` subcommands call
   `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/..."` so they resolve from any working directory.
 - **Hermetic generation config** (`hermetic_driver`, used only by the isolated-generation mode):
-  set `$SKILL_BENCH_CONFIG_DIR` to a clean credentials-only Claude config dir. The default is this
-  repo's fallback and won't exist elsewhere. The Claude judge uses `$SKILL_BENCH_CONFIG_DIR` when
+  set `$SKILL_BENCH_CONFIG_DIR` to a clean credentials-only Claude config dir. The default,
+  `~/issue30/claude-config`, is the author's machine layout and won't exist elsewhere. The Claude judge uses `$SKILL_BENCH_CONFIG_DIR` when
   set, else your own login.
 - **Platform:** the hermetic CLAUDE.md-discovery behavior and `/bench trigger` are Linux/WSL-only
   (#170 hard-problem 4).

@@ -13,12 +13,12 @@ Full factorial designs over many sections multiply run cost fast; ablate the few
 you actually doubt, and only for skills whose cost makes the answer worth buying.
 
 The same method applies to **any always-loaded prose**, not just a SKILL.md — a repo `CLAUDE.md`
-or the pdca-init `claude-md-template.md` it seeds. These pay their cost on EVERY request, so
+or the template one21tools' pdca-init seeds (one21labs/one21tools:pdca-workflow/skills/pdca-init/references/claude-md-template.md). These pay their cost on EVERY request, so
 ablation matters more; vary the prose per variant over a small task set the section targets.
 **Hold the executor's base framing NEUTRAL** — prose ablation is framing-sensitive: a biased
 framing swamps the treatment (one section measured +0.17/0.00/+0.375 across
 tool-denied/implement-biased/neutral framings; ADR 0024). This is the VERIFY step of retrospect ->
-PDCA: `/retrospect` proposes an always-loaded line, `/decide`'s verify runs the ablation, the same
+PDCA (one21tools' pdca-workflow plugin): `/retrospect` proposes an always-loaded line, `/decide`'s verify runs the ablation, the same
 bar decides — CUT means the line does not earn its cost (cut or relocate to a gate/script); a line
 whose absence measurably drops the delta stays; INCONCLUSIVE decides nothing.
 Add-what-recurs, cut-what-does-not: keep the always-loaded surface minimal.

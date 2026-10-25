@@ -21,7 +21,7 @@ analysis:
      outcome must be a LOSS for that arm. A design whose every branch preserves the author's
      artifact is not a measurement.
 
-Pure functions, stdlib only, so the decision logic is testable offline (CLAUDE.md: never ship a
+Pure functions, stdlib only, so the decision logic is testable offline (one21tools' CLAUDE.md: never ship a
 process-gating script without a test of its decision logic).
 """
 import math

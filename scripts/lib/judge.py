@@ -3,7 +3,7 @@
 
 A Judge takes a text prompt + JSON schema and returns a validated object. Swapping the grader
 measures self-preference bias directly (the #172 prototype changed the verdict — findings table in
-skill-measure/README.md, "The cross-family judge"). Stdlib only; each backend shells its CLI headless
+README.md, "The cross-family judge"). Stdlib only; each backend shells its CLI headless
 with tools denied so grading is pure-text and hermetic.
 
 DESIGN DIRECTION — repo owner, 26-Jul-2026: "the skill should guide the user to customize to the
@@ -39,10 +39,9 @@ GROK_TOOLS = "todo_write"
 # inflated met-rate as if it were independent.
 GENERATOR_FAMILY = "anthropic"
 
-# TWIN: pdca-workflow/scripts/crosscheck.mjs carries this table and parse_copilot_jsonl's logic in
-# JS. Neither may import the other (ADR 0050: plugins ship standalone, no content dependencies), so
-# the copies are structural — change one, change both. scripts/check-family-parity.test.mjs in the
-# source repo fails the build if they drift.
+# one21labs/one21tools:pdca-workflow/scripts/crosscheck.mjs carries its own copy of this table for
+# a different product. No test ties the two (retired with the split, one21tools ADR 0102): each
+# repo owns its table, and an id either cannot place is 'unknown', which both refuse.
 _FAMILY_PATTERNS = ((r"claude|anthropic", "anthropic"), (r"grok|xai", "xai"),
                     (r"gpt|openai|\bo[0-9]", "openai"), (r"gemini|google", "google"),
                     (r"kimi|moonshot", "moonshot"))

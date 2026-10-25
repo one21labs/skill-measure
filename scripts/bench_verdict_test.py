@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decision-logic tests for the bench-verdict math + judge-divergence (CLAUDE.md: never ship a
+"""Decision-logic tests for the bench-verdict math + judge-divergence (one21tools' CLAUDE.md: never ship a
 process-gating script without a test of its decision logic). Pure/offline; no judge calls."""
 import os, pathlib, sys, unittest
 
@@ -44,7 +44,7 @@ class TestVerdictMath(unittest.TestCase):
     def test_ci_uses_the_small_cluster_t_multiplier_not_the_normal_one(self):
         # The interval width was never exercised: clustered_delta's construction had no test, and
         # keep_verdict's tests hand-fed synthetic ci95 dicts, so a flat 1.96 shipped unnoticed
-        # across every benchmark this repo ran (all clustered on 4-6 evals, where 1.96 understates
+        # across every benchmark one21tools ran (all clustered on 4-6 evals, where 1.96 understates
         # the interval by 31-62%). Pin the multiplier at the cluster counts actually used.
         self.assertAlmostEqual(bs.t95(3), 3.182)    # G=4: 62% wider than 1.96
         self.assertAlmostEqual(bs.t95(5), 2.571)    # G=6: 31% wider

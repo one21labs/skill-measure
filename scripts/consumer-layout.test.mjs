@@ -13,7 +13,7 @@ import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
-const SCRIPTS_DIR = fileURLToPath(new URL(".", import.meta.url)); // skill-measure/scripts/
+const SCRIPTS_DIR = fileURLToPath(new URL(".", import.meta.url)); // scripts/
 
 // 6 cells: arms A/B/C across scenarios S1/S2 so clustered stats are finite (>=2 clusters).
 const ARM_MAP = [

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decision-logic tests for cost_gate.py (CLAUDE.md Never rule: no gating script without a test
+"""Decision-logic tests for cost_gate.py (one21tools' CLAUDE.md Never rule: no gating script without a test
 of its decision logic)."""
 import json
 import tempfile
