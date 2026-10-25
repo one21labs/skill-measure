@@ -85,7 +85,8 @@ class BlindCellsTemplateRerun(unittest.TestCase):
         spec = importlib.util.spec_from_file_location(
             "blind_cells", Path(__file__).resolve().parents[2] / "templates" / "blind_cells.py")
         mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+        with patch.dict("os.environ", {"SKILL_MEASURE_ROOT": str(Path(__file__).resolve().parents[2])}):
+            spec.loader.exec_module(mod)
         mod.HERE = Path(bench)
         with patch("sys.stdout"), patch("sys.stderr"):
             mod.main()
