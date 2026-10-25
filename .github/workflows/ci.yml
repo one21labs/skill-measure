@@ -1,0 +1,33 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "harness tests — every lib + command script's decision logic"
+        # script mode never collects a class below unittest.main(), so the reachability guard
+        # runs first over every dir this workflow executes *_test.py from
+        run: |
+          set -e
+          python3 scripts/lib/check_reachability.py scripts scripts/lib
+          for t in scripts/*_test.py scripts/lib/*_test.py; do
+            echo "== $t"
+            python3 "$t"
+          done
+      - name: node tests (consumer layout)
+        run: node --test scripts/*.test.mjs
+      - name: manifests parse
+        run: |
+          python3 -c "import json; [json.load(open(f)) for f in ('.claude-plugin/plugin.json', '.claude-plugin/marketplace.json')]"
+      - name: plugin + marketplace validate (no auth needed; version-less by design, one21tools ADR 0075)
+        run: npx -y @anthropic-ai/claude-code@2.1.310 plugin validate .

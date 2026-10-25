@@ -1,7 +1,16 @@
 # skill-measure
 
 A public hermetic pipeline for measuring YOUR OWN skill's value — packaged so any skill author
-can measure their own skill: `/plugin install skill-measure@one21tools`. Plan: #170.
+can measure their own skill. Built for Claude Code: it drives the `claude` CLI and optional
+grok/copilot judges.
+
+```
+/plugin marketplace add one21labs/skill-measure
+/plugin install skill-measure@skill-measure
+```
+
+`ADR NNNN` and `#NNN` cites refer to [one21labs/one21tools](https://github.com/one21labs/one21tools),
+where this plugin was built: its `docs/decisions/` log and issue tracker (plan: one21labs/one21tools#170).
 
 Related work (surveyed 29-Jul-2026): bring-your-own-skill measurement is a crowded lane —
 anthropics/skills' skill-creator is the reference design for paired with/without arms and blind
@@ -103,7 +112,7 @@ Runnable: `/bench` with `verdict` + `skill` + `trigger` subcommands (native subs
 availability-aware pluggable cross-family judge + deterministic cost accounting),
 config layer + consumer-layout test, canonical templates
 (`templates/`), #191 infrastructure-vs-quality hardening (ERROR cells, capture symmetry,
-per-cell attribution), registered in the marketplace.
+per-cell attribution), installable from this repo's own marketplace.
 
 Install-portability proven at two levels: `consumer-layout.test.mjs` reproduces a verdict from a
 copied-out layout at an unrelated cwd with NO CLIs (offline plumbing + math — CI-runnable); and a
