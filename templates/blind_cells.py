@@ -20,14 +20,20 @@ cells with every exclusion counted, BEFORE they are dropped (run on the survivor
 see the skew); a skewed sweep aborts (fix the harness, don't grade the skew).
 """
 import json
+import os
 import secrets
 import shutil
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-# ADAPT: path to skill-measure/scripts/lib (see grid.py note for the installed-plugin form)
-sys.path.insert(0, str(HERE.parents[1] / "skill-measure" / "scripts" / "lib"))
+# The harness lib: $SKILL_MEASURE_ROOT (a checkout of one21labs/skill-measure) or, run from the
+# installed plugin, $CLAUDE_PLUGIN_ROOT. Neither set = exit naming the remedy, never a bare ImportError.
+_ROOT = os.environ.get("SKILL_MEASURE_ROOT") or os.environ.get("CLAUDE_PLUGIN_ROOT")
+if not _ROOT or not (Path(_ROOT) / "scripts" / "lib").is_dir():
+    sys.exit("harness not found: git clone https://github.com/one21labs/skill-measure "
+             "&& export SKILL_MEASURE_ROOT=$PWD/skill-measure")
+sys.path.insert(0, str(Path(_ROOT) / "scripts" / "lib"))
 import bench_io  # noqa: E402
 from artifact_check import classify_cells  # noqa: E402
 from blind import capture_symmetry, write_blinded  # noqa: E402

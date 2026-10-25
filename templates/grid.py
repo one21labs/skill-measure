@@ -24,9 +24,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-# ADAPT: path to skill-measure/scripts/lib — repo checkout shown; installed plugin:
-# Path(os.environ["CLAUDE_PLUGIN_ROOT"]) / "scripts" / "lib"
-sys.path.insert(0, str(HERE.parents[1] / "skill-measure" / "scripts" / "lib"))
+# The harness lib: $SKILL_MEASURE_ROOT (a checkout of one21labs/skill-measure) or, run from the
+# installed plugin, $CLAUDE_PLUGIN_ROOT. Neither set = exit naming the remedy, never a bare ImportError.
+_ROOT = os.environ.get("SKILL_MEASURE_ROOT") or os.environ.get("CLAUDE_PLUGIN_ROOT")
+if not _ROOT or not (Path(_ROOT) / "scripts" / "lib").is_dir():
+    sys.exit("harness not found: git clone https://github.com/one21labs/skill-measure "
+             "&& export SKILL_MEASURE_ROOT=$PWD/skill-measure")
+sys.path.insert(0, str(Path(_ROOT) / "scripts" / "lib"))
 from cost_gate import (DEFAULT_FAILED_CALL_CHARGE_USD, admit, cell_spend, charged_usd,  # noqa: E402
                        gate, spent_so_far)
 from hermetic_driver import (build_env, capture_artifacts, do_call,  # noqa: E402
