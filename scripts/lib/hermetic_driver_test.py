@@ -94,6 +94,8 @@ class DoCall(unittest.TestCase):
         self.assertIsNone(call["error"])
         self.assertTrue(call["retried"])
         self.assertEqual(len(calls), 2)
+        self.assertIsNone(call["first_attempt_cost_usd"])  # no envelope: charged an estimate
+        self.assertIn("first_attempt_cost_usd", summarize_call(call))
 
     def test_gives_up_after_one_retry(self):
         calls = []

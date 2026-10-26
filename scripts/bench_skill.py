@@ -68,6 +68,45 @@ def relative_path_args(argv):
     return out
 
 
+LOCKDOWN_FLAGS = ("--disable-slash-commands", "--strict-mcp-config")
+USER_CONTEXT_FILES = ("settings.json", "CLAUDE.md")
+
+
+def config_dir_of(argv, environ=os.environ):
+    """The CLAUDE_CONFIG_DIR an arm runs under: an `env CLAUDE_CONFIG_DIR=...` prefix in its argv
+    (the first non-assignment ends env's prefix), else the caller's (substrate.arm_env)."""
+    if argv and os.path.basename(argv[0]) == "env":
+        for a in argv[1:]:
+            if "=" not in a:
+                break
+            if a.startswith("CLAUDE_CONFIG_DIR="):
+                return a.split("=", 1)[1]
+    return environ.get("CLAUDE_CONFIG_DIR")
+
+
+def lockdown_gaps(arms, environ=os.environ):
+    """Why the arms may not be isolated from the caller's own setup; [] when they match the
+    SKILL.md recipe. A credentials-only CLAUDE_CONFIG_DIR alone is not enough: the CLI syncs
+    account plugins and skills into it on first use, so each arm also needs LOCKDOWN_FLAGS.
+    Checks the recipe, not the outcome — a warning, never a refusal (one21labs/skill-measure#1)."""
+    gaps = []
+    for arm in arms:
+        missing = [f for f in LOCKDOWN_FLAGS if f not in arm["cmd"]]
+        if missing:
+            gaps.append(f"{arm['name']} arm lacks {' '.join(missing)}")
+    dirs = {arm["name"]: config_dir_of(arm["cmd"], environ) for arm in arms}
+    if None in dirs.values():
+        gaps.append("CLAUDE_CONFIG_DIR unset for an arm: it reads your own ~/.claude")
+    elif len(set(dirs.values())) > 1:
+        gaps.append(f"arms use different CLAUDE_CONFIG_DIRs: {dirs}")
+    else:
+        d = next(iter(dirs.values()))
+        found = [f for f in USER_CONTEXT_FILES if os.path.exists(os.path.join(d, f))]
+        if found:
+            gaps.append(f"CLAUDE_CONFIG_DIR {d} holds {found}, which every arm loads")
+    return gaps
+
+
 def aggregate(cells, with_arm="with", without_arm="without", practical=0.0):
     delta = benchstats.clustered_delta(cells, with_arm, without_arm)
     # matched-scenario, scenario-weighted: these subtract to the verdict's mean
@@ -109,6 +148,9 @@ def main():
         if rel:
             sys.exit(f"--{arm['name']}-cmd: {rel} are relative paths; arms run from an empty temp "
                      f"dir, where they would not resolve — make them absolute")
+    gaps = lockdown_gaps(arms)
+    for g in gaps:  # before the spend prompt, so a dry run shows it
+        print("WARNING: arms not locked down — " + g, file=sys.stderr)
     n_gen = len(evals) * 2 * a.reps
     require_yes(a.yes, f"{len(evals)} tasks x 2 arms x {a.reps} reps = {n_gen} generations + "
                        f"{n_gen} judge calls (judge={a.judge}, substrate={a.substrate})")
@@ -137,6 +179,8 @@ def main():
               "n_reps": a.reps, "errors": errs, **aggregate(cells, practical=a.practical)}
     if judge.fallback_note:  # same-family judge: the caveat travels with the numbers
         report["judge_fallback"] = judge.fallback_note
+    if gaps:  # unverified isolation: same pattern, a possible confounded null
+        report["arm_isolation_unverified"] = gaps
     js = json.dumps(report, indent=1)
     print(js) if a.out == "-" else open(a.out, "w").write(js)
 

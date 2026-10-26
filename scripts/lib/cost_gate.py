@@ -29,6 +29,16 @@ def charged_usd(cost_usd, estimate_usd):
     return estimate_usd if cost_usd is None else cost_usd
 
 
+def call_charge_usd(summary, estimate_usd):
+    """What one do_call is charged (summary = hermetic_driver.summarize_call): its final attempt,
+    plus the failed attempt a retry replaced — both were billed, and charging only the retry let
+    every flaky call undercount by one attempt."""
+    c = charged_usd(summary.get("cost_usd"), estimate_usd)
+    if summary.get("retried"):
+        c += charged_usd(summary.get("first_attempt_cost_usd"), estimate_usd)
+    return c
+
+
 def cell_spend(rec):
     """Spend one cell record accounts for: max(cell_cost_usd, charged_usd) for its own attempt
     plus prior_attempts_usd carried forward from the records it overwrote. ERROR cells count —

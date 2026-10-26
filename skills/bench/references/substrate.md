@@ -30,3 +30,31 @@ re-validates the output parser (adapter tests) before the constant moves — nev
 
 Both runners execute the two arms under identical conditions; the commands themselves must differ
 only in skill loading (SKILL.md, `skill`).
+
+## Locked-down arms
+
+Run on Claude Code 2.1.310 (25-Oct-2026, `--reps 1`, judge copilot, 0 errors). A
+credentials-only config dir alone is NOT isolation: on first use the CLI syncs your account's
+plugins and skills into it. An arm asked to list its skills named dozens, among them
+`engineering-skills:engineering-principles`. Adding `--disable-slash-commands --strict-mcp-config`
+brought that list to none.
+
+```
+mkdir -p /abs/bench-cfg && cp ~/.claude/.credentials.json /abs/bench-cfg/ && chmod 600 /abs/bench-cfg/.credentials.json
+```
+
+An argv cannot set an environment variable, so each arm starts with `/usr/bin/env` and sets it
+there. `--append-system-prompt-file` takes the skill file's path; `--append-system-prompt` would
+need the skill's text inline.
+
+```
+--with-cmd '["/usr/bin/env", "CLAUDE_CONFIG_DIR=/abs/bench-cfg", "/abs/bin/claude", "-p",
+  "--output-format", "json", "--disable-slash-commands", "--strict-mcp-config",
+  "--append-system-prompt-file", "/abs/my-skill/SKILL.md"]'
+--without-cmd '["/usr/bin/env", "CLAUDE_CONFIG_DIR=/abs/bench-cfg", "/abs/bin/claude", "-p",
+  "--output-format", "json", "--disable-slash-commands", "--strict-mcp-config"]'
+```
+
+Use `which claude` for the binary's path. Pin a model by adding the same `--model <id>` to both
+arms. `bench_skill.py` checks this recipe before spending (`lockdown_gaps`). It does not check
+the outcome: plugin hooks and agents that sync into the dir are not excluded.

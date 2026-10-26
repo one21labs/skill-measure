@@ -31,6 +31,13 @@ projects above it (realized in
 `one21labs/one21tools:benchmarks/2026-07-17-thirdparty-writing-plans/`); the stop rule and the
 mechanical gate must be the same number.
 
+**Accepted overshoot (one21labs/skill-measure#1):** the grid's pre-launch backstop
+(`cost_gate.admit`) reserves each call's per-arm estimate, so the cap holds only as well as the
+estimates do. In-flight calls can end above the cap by at most `workers x (actual - estimate)`.
+That bound is accepted rather than padded away; a pilot whose measured cost runs well above the
+estimate is the signal to re-derive the estimate, not to raise the cap. A retried call is charged
+for both attempts (`cost_gate.call_charge_usd`).
+
 **Usage-limit pause (ADR 0099):** every hermetic-driver generation and Claude-judge call goes
 through `usage_guard` (native `/bench skill` generation and `/bench trigger` do not): at 80% of any
 subscription window (`$SKILL_BENCH_PAUSE_AT`) new calls wait for the reset, and a call the limit

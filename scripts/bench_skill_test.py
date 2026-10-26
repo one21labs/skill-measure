@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Decision-logic tests for /bench-skill orchestration (grade_all + aggregate), with a FAKE judge
 so no CLI/network runs. Proves the with/without delta + verdict math end-to-end offline."""
-import os, sys, unittest
+import os, sys, tempfile, unittest
 
 sys.path.insert(0, os.path.dirname(__file__))
 import bench_skill as bs  # noqa: E402
@@ -196,7 +196,6 @@ class TestBenchSkill(unittest.TestCase):
     def test_path_check_boundaries(self):
         # Round 5: a bare program name resolves via PATH, never the cwd; `--flag=value` and a
         # path-named flag's value are checked; a plain option value is never refused.
-        import tempfile
         cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as d:
             for name in ("claude", "sonnet", "myplug"):
@@ -214,6 +213,41 @@ class TestBenchSkill(unittest.TestCase):
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+
+class TestLockdown(unittest.TestCase):
+    def arms(self, cfg, extra=("--disable-slash-commands", "--strict-mcp-config")):
+        base = ["/usr/bin/env", f"CLAUDE_CONFIG_DIR={cfg}", "/bin/claude", "-p", *extra]
+        return [{"name": "with", "cmd": base + ["--append-system-prompt-file", "/s.md"]},
+                {"name": "without", "cmd": list(base)}]
+
+    def test_recipe_has_no_gaps(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(bs.lockdown_gaps(self.arms(d), environ={}), [])
+
+    def test_missing_flags_named_per_arm(self):
+        with tempfile.TemporaryDirectory() as d:
+            gaps = bs.lockdown_gaps(self.arms(d, extra=("--strict-mcp-config",)), environ={})
+        self.assertEqual(len(gaps), 2)
+        self.assertIn("--disable-slash-commands", gaps[0])
+
+    def test_config_dir_unset_differs_or_holds_user_context(self):
+        bare = [{"name": n, "cmd": ["claude", "-p", "--disable-slash-commands",
+                                    "--strict-mcp-config"]} for n in ("with", "without")]
+        self.assertIn("unset", bs.lockdown_gaps(bare, environ={})[0])
+        self.assertEqual(bs.lockdown_gaps(bare, environ={"CLAUDE_CONFIG_DIR": "/nonexistent"}), [])
+        mixed = self.arms("/a")
+        mixed[1] = self.arms("/b")[1]
+        self.assertIn("different", bs.lockdown_gaps(mixed, environ={})[0])
+        with tempfile.TemporaryDirectory() as d:
+            open(os.path.join(d, "CLAUDE.md"), "w").close()
+            self.assertIn("CLAUDE.md", bs.lockdown_gaps(self.arms(d), environ={})[0])
+
+    def test_env_prefix_ends_at_first_non_assignment(self):
+        self.assertEqual(bs.config_dir_of(["env", "A=1", "CLAUDE_CONFIG_DIR=/c", "claude"], {}), "/c")
+        self.assertIsNone(bs.config_dir_of(["env", "claude", "CLAUDE_CONFIG_DIR=/c"], {}))
+        self.assertEqual(bs.config_dir_of(["claude"], {"CLAUDE_CONFIG_DIR": "/e"}), "/e")
 
 
 if __name__ == "__main__":
