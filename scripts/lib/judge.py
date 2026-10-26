@@ -105,6 +105,21 @@ def strip_json_fence(s):
     return s
 
 
+def parse_reply(text, who):
+    """Pure: a judge's JSON reply -> object. An unparseable reply raises JudgeError with the
+    reply's tail, never a raw JSONDecodeError: callers are promised one exception type, and a
+    bare json.loads killed the 29-Jul assay's first claude pass at cell 18 of 30. Valid JSON is
+    taken as-is before any fence stripping, so a ``` inside a string (grok's envelope can quote
+    one) is not cut apart."""
+    try:
+        try:
+            return json.loads(text or "")
+        except ValueError:
+            return json.loads(strip_json_fence(text or ""))
+    except ValueError as e:
+        raise JudgeError(f"{who} reply is not JSON ({e}): {(text or '')[-300:]!r}") from e
+
+
 class _CostTracking:
     """Mixin: accumulate token usage across grade() calls and price it notionally."""
     def _init_usage(self):
@@ -160,7 +175,7 @@ class GrokJudge(_CostTracking):
                 raise JudgeUnreachable(f"grok did not launch: {e}")
             if r.returncode != 0:
                 raise JudgeUnreachable(f"grok exit {r.returncode}: {r.stderr[-300:]}")
-            env = json.loads(r.stdout)
+            env = parse_reply(r.stdout, "grok")
             self._record(env)
             served = sorted((env.get("modelUsage") or {}).keys())
             fams = {family_of(m) for m in served}
@@ -222,7 +237,7 @@ class ClaudeJudge(_CostTracking):
             raise JudgeError(f"judge requested {self.model}, envelope served {served}")
         if served:
             self.name = "+".join(served)
-        return json.loads(strip_json_fence(env.get("result", "")))
+        return parse_reply(env.get("result", ""), "claude")
 
 
 class CopilotJudge(_CostTracking):
@@ -276,7 +291,7 @@ class CopilotJudge(_CostTracking):
                 f"copilot named no placeable model ({model or 'none reported'}), so this grade "
                 f"cannot be shown to be cross-family. Use --judge grok, or pin one via "
                 f"$SKILL_BENCH_JUDGE_CMD.")
-        return json.loads(strip_json_fence(text))
+        return parse_reply(text, "copilot")
 
 
 class CommandJudge(_CostTracking):
@@ -314,7 +329,7 @@ class CommandJudge(_CostTracking):
             raise JudgeUnreachable(f"{self.cmd} timeout after {self.timeout}s")
         if r.returncode != 0:
             raise JudgeUnreachable(f"judge command exit {r.returncode}: {r.stderr[-300:]}")
-        return json.loads(strip_json_fence(r.stdout))
+        return parse_reply(r.stdout, "judge command")
 
 
 class CachedJudge(_CostTracking):

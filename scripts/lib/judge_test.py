@@ -345,6 +345,40 @@ class TestJudge(unittest.TestCase):
                                     "SKILL_BENCH_JUDGE_MODEL": "gemini-3.6-flash"})
         self.assertEqual(j.name, "gemini-3.6-flash")
 
+    def test_parse_reply_keeps_a_fence_quoted_inside_valid_json(self):
+        self.assertEqual(judge.parse_reply('{"r": "```json\\n{}\\n```"}', "x"),
+                         {"r": "```json\n{}\n```"})
+        self.assertEqual(judge.parse_reply('```json\n{"a": 1}\n```', "x"), {"a": 1})
+
+    def test_every_backend_raises_judge_error_on_a_non_json_reply(self):
+        # A bare json.loads leaked JSONDecodeError past callers promised JudgeError only, and
+        # killed the 29-Jul assay's first claude pass at cell 18 of 30.
+        import json as _j
+        from unittest.mock import patch
+        bad = "Sorry, I can't grade this. tail-marker"
+
+        def ok(stdout):
+            return type("R", (), {"returncode": 0, "stdout": stdout, "stderr": ""})
+        claude_env = _j.dumps({"type": "result", "result": bad,
+                               "modelUsage": {"claude-opus-5-5": {}}})
+        copilot_out = "\n".join([
+            _j.dumps({"type": "session.auto_mode_resolved", "data": {"chosenModel": "gpt-5-mini"}}),
+            _j.dumps({"type": "assistant.message", "data": {"content": bad}})])
+        cases = [
+            ("grok", judge.GrokJudge(bin="/usr/bin/grok"), ok(bad)),
+            ("claude", judge.ClaudeJudge(), ok(claude_env)),
+            ("copilot", judge.CopilotJudge(bin="/usr/bin/copilot", env={}), ok(copilot_out)),
+            ("command", judge.CommandJudge(env={"SKILL_BENCH_JUDGE_CMD": "my-llm",
+                                                "SKILL_BENCH_JUDGE_MODEL": "gemini-3.6-flash"}),
+             ok(bad)),
+        ]
+        for name, j, r in cases:
+            with patch.object(judge.subprocess, "run", return_value=r):
+                with self.assertRaises(judge.JudgeError, msg=name) as ctx:
+                    j.grade("prompt", {"type": "object"})
+            self.assertNotIsInstance(ctx.exception, judge.JudgeUnreachable, name)
+            self.assertIn("tail-marker", str(ctx.exception), name)
+
     def test_auto_prefers_the_adopter_configured_judge_over_a_discovered_cli(self):
         r, note = judge.resolve_judge("auto", which=_which({"grok", "claude"}),
                                       env={"SKILL_BENCH_JUDGE_CMD": "my-llm"})
