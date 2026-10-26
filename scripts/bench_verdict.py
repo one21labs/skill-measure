@@ -98,7 +98,7 @@ def regrade(judge, cells, keys, workers, cache=None):
         for i, fut in enumerate(as_completed(futs), 1):
             try:
                 out.append(fut.result())
-            except (JudgeError, Exception) as e:
+            except JudgeError as e:  # anything else is a bug, and must surface, not become a row
                 errs.append({"bid": futs[fut], "error": str(e)[:200]})
             print(f"  [{i}/{len(cells)}] {'ok' if not errs or errs[-1]['bid']!=futs[fut] else 'ERR'}",
                   file=sys.stderr)

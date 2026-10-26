@@ -268,6 +268,15 @@ class TestJudge(unittest.TestCase):
         self.assertEqual(judge.family_of("gemini-3.6-flash"), "google")
         self.assertEqual(judge.family_of("kimi-k2.7-code"), "moonshot")
 
+    def test_family_of_places_local_open_weight_models(self):
+        for model, fam in (("mistral-7b", "mistral"), ("qwen3:32b", "alibaba"),
+                           ("deepseek-r1:14b", "deepseek"), ("phi4-mini", "microsoft"),
+                           ("gemma3:27b", "google"), ("llama3.3:70b", "meta"),
+                           ("ollama/mistral-small", "mistral")):
+            with self.subTest(model):
+                self.assertEqual(judge.family_of(model), fam)
+        self.assertEqual(judge.family_of("ollama-default"), "unknown")  # the runner is not a model
+
     def test_family_of_unplaceable_is_unknown_not_foreign(self):
         self.assertEqual(judge.family_of("house-model-7"), "unknown")
         self.assertEqual(judge.family_of(None), "unknown")

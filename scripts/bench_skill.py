@@ -38,7 +38,7 @@ def grade_all(gen_rows, evals_by_id, judge):
         try:
             m = met_map(judge.grade(rubric.skill_grade_prompt(ev["task"], r["output"], exps),
                                     rubric.GRADE_SCHEMA), len(exps))
-        except (JudgeError, ValueError) as e:  # ValueError: a reply that is not JSON at all
+        except JudgeError as e:  # judge.parse_reply makes a non-JSON reply a JudgeError too
             errs.append({"bid": bid, "error": str(e)[:200]})
             continue
         met = {i: m[i] for i in range(1, len(exps) + 1)}  # strict met_map: exactly these ids

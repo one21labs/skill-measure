@@ -8,7 +8,7 @@ VENDORED from anthropics/skills (skill-creator/scripts/run_eval.py), clone dated
 (ADR 0033), plus:
   1. Five correctness fixes, each marked `# VENDORED (fix N of 5)` at its site. Fixes 1-3 are
      the stream patches (one21labs/one21tools:benchmarks/2026-07-07-toolkit-grid/trigger-kit/runner-patches.diff;
-     filing them upstream is DEFERRED pending owner approval to post externally) -- unpatched,
+     filing them upstream is CANCELLED, owner 26-Oct-2026: they stay vendored here) -- unpatched,
      the stream loop hard-fails detection on the first non-Skill/Read tool call and closes the
      detection window at the first content_block_stop/message_stop, producing WRONG trigger
      counts: (1) an unrelated tool call no longer ends the run -- keep watching for a later
