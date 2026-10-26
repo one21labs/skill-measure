@@ -31,7 +31,7 @@ if not _ROOT or not (Path(_ROOT) / "scripts" / "lib").is_dir():
     sys.exit("harness not found: git clone https://github.com/one21labs/skill-measure "
              "&& export SKILL_MEASURE_ROOT=$PWD/skill-measure")
 sys.path.insert(0, str(Path(_ROOT) / "scripts" / "lib"))
-from cost_gate import (DEFAULT_FAILED_CALL_CHARGE_USD, admit, cell_spend, charged_usd,  # noqa: E402
+from cost_gate import (DEFAULT_FAILED_CALL_CHARGE_USD, admit, call_charge_usd, cell_spend,  # noqa: E402
                        gate, spent_so_far)
 from hermetic_driver import (build_env, capture_artifacts, do_call,  # noqa: E402
                              fresh_copy, summarize_call)
@@ -78,7 +78,7 @@ def run_cell(scenario, src, context, rep, arm, env, out, state, lock, cap, est):
     shutil.rmtree(workdir, ignore_errors=True)
     summary = summarize_call(call, requested_model=MODEL)
     summary["cell_cost_usd"] = summary.get("cost_usd") or 0.0
-    summary["charged_usd"] = charged_usd(summary.get("cost_usd"), est[arm])
+    summary["charged_usd"] = call_charge_usd(summary, est[arm])  # a retry bills both attempts
     # The overwritten ERROR cell's calls were billed: carry them forward (spent_so_far sums them).
     summary["prior_attempts_usd"] = cell_spend(old) if old else 0.0
     record = {"cell": cell, "scenario": scenario, "arm": arm, "rep": rep, "model": MODEL,

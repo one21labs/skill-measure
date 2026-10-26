@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cost_gate import (admit, cell_spend, charged_usd, gate, main, project_grid_cost,
+from cost_gate import (admit, call_charge_usd, cell_spend, charged_usd, gate, main, project_grid_cost,
                        spent_so_far)
 
 
@@ -92,6 +92,15 @@ class ChargeTest(unittest.TestCase):
 
     def test_failed_call_charged_estimate(self):
         self.assertEqual(charged_usd(None, 0.15), 0.15)
+
+    def test_retried_call_charges_both_attempts(self):
+        # the failed first attempt reported no envelope: charged the estimate, beside the retry
+        self.assertAlmostEqual(call_charge_usd({"cost_usd": 0.07, "retried": True,
+                                                "first_attempt_cost_usd": None}, 0.15), 0.22)
+        self.assertAlmostEqual(call_charge_usd({"cost_usd": 0.07, "retried": True,
+                                                "first_attempt_cost_usd": 0.02}, 0.15), 0.09)
+        self.assertAlmostEqual(call_charge_usd({"cost_usd": 0.07, "retried": False}, 0.15), 0.07)
+        self.assertAlmostEqual(call_charge_usd({"cost_usd": None, "retried": True}, 0.15), 0.30)
 
     def test_cell_spend_is_max_plus_prior(self):
         self.assertAlmostEqual(cell_spend({"summary": {"cell_cost_usd": 0.0, "charged_usd": 0.15,

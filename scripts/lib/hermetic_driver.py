@@ -192,6 +192,8 @@ def do_call(prompt, model, env, cwd, timeout=DEFAULT_TIMEOUT_S, run=subprocess.r
         return first
     retry = attempt()
     retry["retried"] = True
+    # the failed attempt was billed too; None (no envelope) is charged an estimate downstream
+    retry["first_attempt_cost_usd"] = safe_get(first["envelope"], "total_cost_usd")
     return retry
 
 
@@ -227,4 +229,5 @@ def summarize_call(call, requested_model=None):
         "error": error,
         "served_models": served,
         "retried": call.get("retried", False),
+        "first_attempt_cost_usd": call.get("first_attempt_cost_usd"),
     }
