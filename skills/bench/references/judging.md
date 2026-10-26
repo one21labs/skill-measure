@@ -23,9 +23,14 @@ python3 -c 'import os, sys; sys.path.insert(0, os.environ["CLAUDE_PLUGIN_ROOT"] 
 print([n for n in judge.BACKENDS if judge.cli_available(n)])'
 ```
 
-Anything besides `claude` alone means you already have a cross-family judge and `--judge auto`
+Anything besides `claude` alone means you have a cross-family judge installed and `--judge auto`
 will pick it. Preference order is `command`, `grok`, `copilot`, then `claude` — a judge you
 configured on purpose outranks one merely found on PATH.
+
+Installed is not signed in, so before any paid call each candidate gets one tiny probe call
+(`judge.probe`). `auto` skips one that does not answer, and the report's `judge_fallback` names it
+and says why. An explicit `--judge <name>` that does not answer stops the run with the CLI's own
+error rather than falling back.
 
 **2. A shipped backend installed off PATH.** Point its variable at the binary — `$GROK_BIN`,
 `$COPILOT_BIN`. This is the common case, not the exception: editors and extensions routinely

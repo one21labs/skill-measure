@@ -546,6 +546,27 @@ class TestLoadDirAndCache(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr)
             return json.loads(r.stdout)
 
+    def test_live_run_stops_at_the_probe_when_no_judge_answers(self):
+        # installed but signed out: the run must stop before re-grading a single cell
+        import subprocess, tempfile
+        with tempfile.TemporaryDirectory() as d:
+            bench_dir(d, [(b, a, s, exps(m)) for b, a, s, m in GRID])
+            bindir = os.path.join(d, "bin")
+            os.makedirs(bindir)
+            for cli in ("grok", "claude"):
+                with open(os.path.join(bindir, cli), "w") as f:
+                    f.write("#!/bin/sh\necho 'Error: Not signed in' >&2\nexit 1\n")
+                os.chmod(os.path.join(bindir, cli), 0o755)
+            env = {k: v for k, v in os.environ.items()
+                   if k not in ("SKILL_BENCH_JUDGE_CMD", "GROK_BIN", "COPILOT_BIN")}
+            env["PATH"] = os.pathsep.join([bindir, os.path.dirname(sys.executable), "/usr/bin", "/bin"])
+            env["HOME"] = d  # build_env prepends ~/.local/bin, where a real claude would answer
+            r = subprocess.run([sys.executable, os.path.join(HERE, "bench_verdict.py"), "--dir", d,
+                                "--judge", "auto"], capture_output=True, text=True, env=env)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("no judge answered a probe call", r.stderr)
+        self.assertNotIn("re-grading", r.stderr)
+
     def test_a_cache_is_never_labelled_with_a_live_backends_name(self):
         # grok and claude both reachable: the label was grok-4.5 / claude-opus-4-8, whichever
         # CLI resolved, regardless of who produced the cached grades.

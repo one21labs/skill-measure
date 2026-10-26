@@ -11,6 +11,19 @@ def _which(available):
     return lambda name: ("/usr/bin/" + name) if name in available else None
 
 
+def _no_probe(j):
+    """Stub probe: every backend answers (no CLI call)."""
+
+
+def _probe_failing(*names):
+    """Stub probe: the named backends do not answer, every other one does."""
+    def probe(j):
+        for n in names:
+            if isinstance(j, judge.BACKENDS[n]["cls"]):
+                raise judge.JudgeUnreachable(f"{n} exit 1: Not signed in")
+    return probe
+
+
 class TestJudge(unittest.TestCase):
     def test_met_map_extracts_bools_by_id(self):
         v = {"expectations": [{"id": 1, "met": True, "why": "x"}, {"id": 2, "met": False, "why": "y"}]}
@@ -48,8 +61,8 @@ class TestJudge(unittest.TestCase):
     def test_make_judge_dispatch_and_names(self):
         # inject availability so this passes regardless of which CLIs the CI runner has
         both = _which({"grok", "claude"})
-        self.assertEqual(judge.make_judge("grok", which=both).name, "grok-4.5")
-        self.assertEqual(judge.make_judge("claude", which=both).name, "claude-opus-4-8")
+        self.assertEqual(judge.make_judge("grok", which=both, probe=_no_probe).name, "grok-4.5")
+        self.assertEqual(judge.make_judge("claude", which=both, probe=_no_probe).name, "claude-opus-4-8")
 
     def test_auto_prefers_grok_cross_family(self):
         r, note = judge.resolve_judge("auto", which=_which({"grok", "claude"}))
@@ -71,9 +84,52 @@ class TestJudge(unittest.TestCase):
         self.assertIn("GROK_BIN", str(cm.exception))
 
     def test_make_judge_auto_fallback_sets_note(self):
-        j = judge.make_judge("auto", which=_which({"claude"}))
+        j = judge.make_judge("auto", which=_which({"claude"}), probe=_no_probe)
         self.assertEqual(j.name, "claude-opus-4-8")
         self.assertIn("SAME-FAMILY", j.fallback_note)
+
+    def test_auto_skips_a_backend_that_fails_the_probe(self):
+        j = judge.make_judge("auto", which=_which({"grok", "copilot", "claude"}),
+                             probe=_probe_failing("grok"))
+        self.assertEqual(j.backend, "copilot")
+        self.assertIn("grok", j.fallback_note)
+        self.assertNotIn("SAME-FAMILY", j.fallback_note)
+
+    def test_auto_reaching_claude_after_skips_names_both_caveats(self):
+        j = judge.make_judge("auto", which=_which({"grok", "copilot", "claude"}),
+                             probe=_probe_failing("grok", "copilot"))
+        self.assertEqual(j.backend, "claude")
+        self.assertIn("copilot", j.fallback_note)
+        self.assertIn("SAME-FAMILY", j.fallback_note)
+
+    def test_auto_none_answering_raises(self):
+        with self.assertRaises(judge.JudgeError) as cm:
+            judge.make_judge("auto", which=_which({"grok", "claude"}),
+                             probe=_probe_failing("grok", "claude"))
+        self.assertIn("Not signed in", str(cm.exception))
+
+    def test_explicit_judge_failing_probe_raises_not_substitutes(self):
+        with self.assertRaises(judge.JudgeError) as cm:
+            judge.make_judge("grok", which=_which({"grok", "copilot"}), probe=_probe_failing("grok"))
+        self.assertIn("--judge grok", str(cm.exception))
+
+    def test_probe_fails_only_on_no_answer(self):
+        class Fake:
+            def __init__(self, exc): self.exc = exc
+            def grade(self, prompt, schema): raise self.exc
+        with self.assertRaises(judge.JudgeUnreachable):
+            judge.probe(Fake(judge.JudgeUnreachable("exit 1")))
+        # an answer grade() rejects (same-family routing, bad JSON) still proves reachability
+        judge.probe(Fake(judge.JudgeError("routed to claude-haiku")))
+        judge.probe(Fake(ValueError("not json")))
+
+    def test_missing_binary_is_unreachable(self):
+        with self.assertRaises(judge.JudgeUnreachable):
+            judge.GrokJudge(bin="/nonexistent/grok").grade("p", judge.PROBE_SCHEMA)
+        with self.assertRaises(judge.JudgeUnreachable):
+            judge.CopilotJudge(bin="/nonexistent/copilot").grade("p", judge.PROBE_SCHEMA)
+        with self.assertRaises(judge.JudgeUnreachable):
+            judge.ClaudeJudge(bin="/nonexistent/claude").grade("p", judge.PROBE_SCHEMA)
 
     def test_grok_timeout_raises_judge_error(self):
         # A judge timeout must surface as JudgeError like every other grade() failure mode —

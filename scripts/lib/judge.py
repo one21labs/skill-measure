@@ -85,6 +85,11 @@ class JudgeError(RuntimeError):
     pass
 
 
+class JudgeUnreachable(JudgeError):
+    """The backend did not answer at all (missing binary, signed out, nonzero exit, timeout), as
+    opposed to answering with something unusable. Only this fails the pre-run probe."""
+
+
 def strip_json_fence(s):
     """Pure: strip ```json fences / prose around a JSON blob (claude -p has no schema mode)."""
     s = s.strip()
@@ -150,9 +155,11 @@ class GrokJudge(_CostTracking):
                 # Contract consistency: timeout is a JudgeError like every other failure mode —
                 # a caller's per-cell handler must be able to catch ONE exception type (a raw
                 # TimeoutExpired killed a whole resumable grading pass, PR #219 retrospective).
-                raise JudgeError(f"grok timeout after {self.timeout}s")
+                raise JudgeUnreachable(f"grok timeout after {self.timeout}s")
+            except OSError as e:
+                raise JudgeUnreachable(f"grok did not launch: {e}")
             if r.returncode != 0:
-                raise JudgeError(f"grok exit {r.returncode}: {r.stderr[-300:]}")
+                raise JudgeUnreachable(f"grok exit {r.returncode}: {r.stderr[-300:]}")
             env = json.loads(r.stdout)
             self._record(env)
             served = sorted((env.get("modelUsage") or {}).keys())
@@ -201,10 +208,13 @@ class ClaudeJudge(_CostTracking):
         call_env.pop("CLAUDE_CONFIG_DIR")
         if self.config:
             call_env["CLAUDE_CONFIG_DIR"] = self.config
-        env = usage_guard.guarded_run(
-            [self.bin, "-p", "--output-format", "json", "--model", self.model, "--tools", "",
-             "--disable-slash-commands", "--strict-mcp-config", "--effort", self.effort],
-            timeout=self.timeout, error=JudgeError, input=p, cwd=self.cwd, env=call_env)
+        try:
+            env = usage_guard.guarded_run(
+                [self.bin, "-p", "--output-format", "json", "--model", self.model, "--tools", "",
+                 "--disable-slash-commands", "--strict-mcp-config", "--effort", self.effort],
+                timeout=self.timeout, error=JudgeUnreachable, input=p, cwd=self.cwd, env=call_env)
+        except OSError as e:
+            raise JudgeUnreachable(f"claude did not launch: {e}")
         self._record(env)
         self.real_cost_usd += env.get("total_cost_usd") or 0.0
         served = sorted((env.get("modelUsage") or {}).keys())
@@ -247,9 +257,11 @@ class CopilotJudge(_CostTracking):
                  "--available-tools=sql", "--allow-all-tools"],
                 capture_output=True, text=True, timeout=self.timeout)
         except subprocess.TimeoutExpired:
-            raise JudgeError(f"copilot timeout after {self.timeout}s")  # same contract as grok
+            raise JudgeUnreachable(f"copilot timeout after {self.timeout}s")  # same contract as grok
+        except OSError as e:
+            raise JudgeUnreachable(f"copilot did not launch: {e}")
         if r.returncode != 0:
-            raise JudgeError(f"copilot exit {r.returncode}: {r.stderr[-300:]}")
+            raise JudgeUnreachable(f"copilot exit {r.returncode}: {r.stderr[-300:]}")
         text, model = parse_copilot_jsonl(r.stdout)
         self.last_model = model
         fam = family_of(model)
@@ -299,9 +311,9 @@ class CommandJudge(_CostTracking):
             r = subprocess.run(self.cmd, shell=True, input=p, capture_output=True, text=True,
                                timeout=self.timeout)
         except subprocess.TimeoutExpired:
-            raise JudgeError(f"{self.cmd} timeout after {self.timeout}s")
+            raise JudgeUnreachable(f"{self.cmd} timeout after {self.timeout}s")
         if r.returncode != 0:
-            raise JudgeError(f"judge command exit {r.returncode}: {r.stderr[-300:]}")
+            raise JudgeUnreachable(f"judge command exit {r.returncode}: {r.stderr[-300:]}")
         return json.loads(strip_json_fence(r.stdout))
 
 
@@ -377,11 +389,56 @@ def resolve_judge(name, which=None, env=None):
     raise JudgeError(f"unknown judge {name!r} (use auto|" + "|".join(BACKENDS) + ")")
 
 
-def make_judge(name, which=None, env=None):
-    resolved, note = resolve_judge(name, which, env)
-    j = BACKENDS[resolved]["cls"]()
-    j.fallback_note = note
-    return j
+PROBE_PROMPT = 'Reply with exactly this JSON and nothing else: {"ok": true}'
+PROBE_SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]}
+
+
+def probe(judge):
+    """One tiny grade before the run spends anything: raises JudgeUnreachable when the backend
+    does not answer. On PATH is not usable — an installed but signed-out grok passed `auto` and
+    failed every grade after the generations were paid for (25-Oct-2026). Any answer counts, even
+    one grade() rejects (bad JSON, a same-family routing): the CLI is reachable, and per-call checks
+    still guard the real grades. Its usage is recorded like any grade's (it was billed)."""
+    try:
+        judge.grade(PROBE_PROMPT, PROBE_SCHEMA)
+    except JudgeUnreachable:
+        raise
+    except (JudgeError, ValueError):
+        pass
+
+
+def make_judge(name, which=None, env=None, probe=probe):
+    """A judge that answered the probe. An explicit name that fails it raises with the CLI's own
+    error; `auto` skips it to the next backend in AUTO_ORDER and says so in fallback_note."""
+    if name != "auto":
+        resolved, note = resolve_judge(name, which, env)
+        j = BACKENDS[resolved]["cls"]()
+        try:
+            probe(j)
+        except JudgeUnreachable as e:
+            raise JudgeError(f"--judge {name} is installed but did not answer a probe call ({e}); "
+                             f"sign it in or fix it, or use --judge auto") from e
+        j.fallback_note, j.backend = note, resolved
+        return j
+    skipped = []
+    for candidate in AUTO_ORDER:
+        if not cli_available(candidate, which, env):
+            continue
+        j = BACKENDS[candidate]["cls"]()
+        try:
+            probe(j)
+        except JudgeUnreachable as e:
+            skipped.append(f"{candidate} ({str(e)[:120]})")
+            continue
+        note = None if BACKENDS[candidate]["cross_family"] else SAME_FAMILY_NOTE
+        if skipped:
+            note = "skipped, did not answer a probe: " + "; ".join(skipped) + (
+                " — " + note if note else "")
+        j.fallback_note, j.backend = note, candidate
+        return j
+    raise JudgeError("no judge answered a probe call" + (": " + "; ".join(skipped) if skipped else
+                     ": install one of " + ", ".join(BACKENDS) + ", or set $SKILL_BENCH_JUDGE_CMD "
+                     "to your own judge command (references/judging.md)"))
 
 
 def met_map(verdict, n=None):
