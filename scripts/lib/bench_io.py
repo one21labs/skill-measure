@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Reusable benchmark-artifact IO (ADR 0026): format convention + sampled raw retention.
 
-ARCHITECTURE ROLE: the one home for benchmark-record serialization (dump_records/load_records),
-for the arm-map location rule (load_arm_map), and for bounding raw-output byte cost
+ARCHITECTURE ROLE: the one home for benchmark-record serialization (dump_records/load_records,
+report_json), for the arm-map location rule (load_arm_map), and for bounding raw-output byte cost
 (sample_and_archive_raw — archive, never discard).
 Format-choice rationale and size measurements live in ADR 0026; per-function contracts live in
 the docstrings below.
@@ -11,12 +11,29 @@ DESIGN CONSTRAINTS: stdlib only.
 """
 import csv
 import json
+import math
 import os
 import tarfile
 
 # CSV default per ADR 0026 (owner preference; CSV == TSV in size for delimiter-free scalar records).
 RAW_FORMATS = ("csv", "tsv", "jsonl")
 _DELIMS = {"csv": ",", "tsv": "\t"}
+
+
+def _finite(v):
+    if isinstance(v, float) and not math.isfinite(v):
+        return None
+    if isinstance(v, dict):
+        return {k: _finite(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_finite(x) for x in v]
+    return v
+
+
+def report_json(report):
+    """A report as strict JSON: a NaN/inf (an arm with no graded cells, a one-cluster interval)
+    becomes null. json.dumps writes bare NaN by default, which strict parsers reject."""
+    return json.dumps(_finite(report), indent=1, allow_nan=False)
 
 
 def _flatten_value(key, value):

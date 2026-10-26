@@ -19,6 +19,7 @@ import rubric, benchstats  # noqa: E402
 from judge import make_judge, met_map, JudgeError, BACKENDS  # noqa: E402
 from substrate import make_substrate  # noqa: E402
 from spend_guard import add_spend_flag, require_yes  # noqa: E402
+from bench_io import report_json  # noqa: E402
 
 
 def grade_all(gen_rows, evals_by_id, judge):
@@ -181,7 +182,7 @@ def main():
         report["judge_fallback"] = judge.fallback_note
     if gaps:  # unverified isolation: same pattern, a possible confounded null
         report["arm_isolation_unverified"] = gaps
-    js = json.dumps(report, indent=1)
+    js = report_json(report)
     print(js) if a.out == "-" else open(a.out, "w").write(js)
 
 

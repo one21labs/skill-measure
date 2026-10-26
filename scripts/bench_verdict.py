@@ -22,8 +22,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 import rubric, benchstats  # noqa: E402
-from bench_io import load_arm_map  # noqa: E402
-from judge import (make_judge, met_map, JudgeError, cli_available, CachedJudge,  # noqa: E402
+from bench_io import load_arm_map, report_json  # noqa: E402
+from judge import (make_judge, met_map, JudgeError, CachedJudge,  # noqa: E402
                    BACKENDS, family_of, GENERATOR_FAMILY)
 
 
@@ -163,12 +163,13 @@ def main():
             degrade_note = (f"--judge both needs a cross-family judge; the --cache file names "
                             f"{judge.name!r}, not one — reporting a single-judge verdict instead")
     else:
-        if want_both and not any(cli_available(n) for n, s in BACKENDS.items() if s["cross_family"]):
+        # resolves per judge.AUTO_ORDER, probing each CLI before any grade; raises if none answers
+        judge = make_judge("auto" if a.judge in ("auto", "both") else a.judge)
+        if want_both and not BACKENDS[judge.backend]["cross_family"]:
             want_both = False
             degrade_note = ("--judge both needs a reachable cross-family judge for the divergence "
-                            "diagnostic; none is — reporting a single-judge verdict instead")
-        # resolves per judge.AUTO_ORDER; raises with remedy if none
-        judge = make_judge("auto" if a.judge in ("auto", "both") else a.judge)
+                            "diagnostic; none answered a probe — reporting a single-judge verdict "
+                            "instead")
     if judge.fallback_note:
         print("NOTE: " + judge.fallback_note, file=sys.stderr)
     if degrade_note:
@@ -205,7 +206,7 @@ def main():
         report["verdict_flip"] = benchstats.verdict_flip(
             benchstats.clustered_delta(baseline, px, py),
             benchstats.clustered_delta(regraded, px, py), a.practical)
-    js = json.dumps(report, indent=1)
+    js = report_json(report)
     if a.out == "-":
         print(js)
     else:

@@ -9,7 +9,9 @@ import tarfile
 import tempfile
 import unittest
 
-from bench_io import dump_records, load_arm_map, load_records, sample_and_archive_raw
+import json
+
+from bench_io import dump_records, load_arm_map, load_records, report_json, sample_and_archive_raw
 
 RECORDS = [
     {"bid": "1", "skill": "building-skills", "arm": "with"},
@@ -209,6 +211,16 @@ class LoadArmMapTest(unittest.TestCase):
             self._write(os.path.join(tmp, "arm_map.tsv"), [("b1", "C", "S1", 1)])
             self._write(os.path.join(tmp, "graded", "arm_map.tsv"), [("b1", "A", "S9", 1)])
             self.assertEqual(load_arm_map(tmp), {"b1": ("C", "S1")})
+
+
+
+class ReportJsonTest(unittest.TestCase):
+    def test_non_finite_becomes_null_at_any_depth(self):
+        nan, inf = float("nan"), float("inf")
+        out = report_json({"arm_means": {"with": nan}, "ci95": [nan, inf], "mean": 0.5, "n": 2})
+        self.assertEqual(json.loads(out), {"arm_means": {"with": None}, "ci95": [None, None],
+                                           "mean": 0.5, "n": 2})
+        self.assertNotIn("NaN", out)
 
 
 if __name__ == "__main__":
