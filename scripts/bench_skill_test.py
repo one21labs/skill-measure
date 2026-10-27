@@ -216,6 +216,71 @@ class TestBenchSkill(unittest.TestCase):
                 os.chdir(cwd)
 
 
+class TestScriptChecks(unittest.TestCase):
+    """Per-expectation script checks (lib/script_check.py) mixed with judged expectations."""
+    MIXED = [{"id": "t1", "task": "task one",
+              "expectations": [{"text": "tests pass", "check": ["/c/tests"]}, "explains why"]}]
+
+    @staticmethod
+    def fake_check(results):
+        def run(argv, output):
+            r = results[output]
+            if isinstance(r, Exception):
+                raise r
+            return r
+        return run
+
+    def test_check_grades_its_expectation_and_judge_sees_only_the_rest(self):
+        prompts = []
+
+        class Spy(FakeJudge):
+            def grade(self, prompt, schema):
+                prompts.append(prompt)
+                return super().grade(prompt, schema)
+        gen = [{"prompt_id": "t1", "arm": "with", "output": "GOOD"}]
+        cells, errs = bs.grade_all(gen, {e["id"]: e for e in self.MIXED}, Spy({"GOOD": [True]}),
+                                   run_check=self.fake_check({"GOOD": False}))
+        self.assertEqual((cells[0]["met"], errs), ({1: False, 2: True}, []))
+        self.assertIn("1. explains why", prompts[0])   # renumbered from 2, and alone
+        self.assertNotIn("tests pass", prompts[0])
+
+    def test_all_checks_never_call_the_judge(self):
+        evals = [{"id": "t1", "task": "x", "expectations": [{"text": "a", "check": ["/c"]}]}]
+        gen = [{"prompt_id": "t1", "arm": "with", "output": "GOOD"}]
+        cells, errs = bs.grade_all(gen, {e["id"]: e for e in evals}, None,
+                                   run_check=self.fake_check({"GOOD": True}))
+        self.assertEqual((cells[0]["met"], errs), ({1: True}, []))
+
+    def test_a_broken_check_excludes_the_cell_before_the_judge_is_paid(self):
+        from script_check import CheckError
+
+        class NoCall(FakeJudge):
+            def grade(self, prompt, schema):
+                raise AssertionError("judge called after a failed check")
+        gen = [{"prompt_id": "t1", "arm": "with", "output": "BAD"}]
+        cells, errs = bs.grade_all(gen, {e["id"]: e for e in self.MIXED}, NoCall({}),
+                                   run_check=self.fake_check({"BAD": CheckError("exit 2")}))
+        self.assertEqual(cells, [])
+        self.assertEqual([e["bid"] for e in errs], ["t1:with:r1"])
+
+    def test_cli_refuses_a_bad_check_before_any_spend(self):
+        import json, subprocess
+        cases = ((["./check.sh"], "relative paths"), ("check.sh", "argv list"), ([], "argv list"))
+        for check, msg in cases:
+            with tempfile.TemporaryDirectory() as d:
+                open(os.path.join(d, "check.sh"), "w").close()
+                ev = os.path.join(d, "evals.json")
+                with open(ev, "w") as f:
+                    json.dump([{"id": "t1", "task": "x",
+                                "expectations": [{"text": "a", "check": check}]}], f)
+                r = subprocess.run([sys.executable, os.path.join(HERE, "bench_skill.py"),
+                                    "--evals", ev, "--with-cmd", '["/bin/true"]',
+                                    "--without-cmd", '["/bin/true"]'],
+                                   capture_output=True, text=True, cwd=d)
+            self.assertNotEqual(r.returncode, 0, check)
+            self.assertIn(msg, r.stderr, check)
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 

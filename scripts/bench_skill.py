@@ -5,7 +5,8 @@ Generate each eval task under two arms (skill-loaded vs bare) via the rented sub
 output against pre-registered expectations with the cross-family judge, and report the with-without
 fraction-met delta + KEEP/CUT verdict (ADR 0025 shape). Reuses benchstats for the math.
 
-Eval file: JSON list of {"id","task","expectations":[...]}. Arms: {"with":[argv...],"without":[argv...]}
+Eval file: JSON list of {"id","task","expectations":[...]}. An expectation is a string the judge
+grades, or {"text", "check": [argv...]} that a script grades instead (lib/script_check.py). Arms: {"with":[argv...],"without":[argv...]}
 where the task text is appended as the final CLI arg. Substrate + judge are injected so the
 orchestration core (grade_all/aggregate) is unit-testable offline (see bench_skill_test.py).
 
@@ -20,13 +21,16 @@ from judge import make_judge, met_map, JudgeError, BACKENDS  # noqa: E402
 from substrate import make_substrate  # noqa: E402
 from spend_guard import add_spend_flag, require_yes  # noqa: E402
 from bench_io import report_json  # noqa: E402
+from script_check import CheckError, check_of, text_of, run_check  # noqa: E402
 
 
-def grade_all(gen_rows, evals_by_id, judge):
+def grade_all(gen_rows, evals_by_id, judge, run_check=run_check):
     """gen_rows: [{prompt_id, arm, output[, error]}] -> (cells: [{bid, arm, scenario, met}], errors).
-    A generation that failed (row carries "error") or a cell the judge cannot grade is recorded in
-    errors and EXCLUDED, never graded: scoring it would charge a CLI or judge failure to the arm,
-    and one bad call must not end the run."""
+    Expectations with a "check" are graded by their script, run first; the judge sees only the
+    rest, renumbered 1..k, and is not called when there are none. A generation that failed (row
+    carries "error") or a cell its judge or a check cannot grade is recorded in errors and
+    EXCLUDED, never graded: scoring it would charge a CLI, judge, or check failure to the arm, and
+    one bad call must not end the run."""
     cells, errs = [], []
     for r in gen_rows:
         ev = evals_by_id[r["prompt_id"]]
@@ -35,13 +39,19 @@ def grade_all(gen_rows, evals_by_id, judge):
         if r.get("error"):
             errs.append({"bid": bid, "error": "generation: " + r["error"][:200]})
             continue
+        judged = [i for i, e in enumerate(exps, 1) if not check_of(e)]
         try:
-            m = met_map(judge.grade(rubric.skill_grade_prompt(ev["task"], r["output"], exps),
-                                    rubric.GRADE_SCHEMA), len(exps))
-        except JudgeError as e:  # judge.parse_reply makes a non-JSON reply a JudgeError too
+            met = {i: run_check(check_of(e), r["output"])
+                   for i, e in enumerate(exps, 1) if check_of(e)}
+            if judged:
+                m = met_map(judge.grade(rubric.skill_grade_prompt(
+                    ev["task"], r["output"], [text_of(exps[i - 1]) for i in judged]),
+                    rubric.GRADE_SCHEMA), len(judged))  # strict met_map: exactly ids 1..k
+                met.update({i: m[k] for k, i in enumerate(judged, 1)})
+        except (JudgeError, CheckError) as e:  # parse_reply makes a non-JSON reply a JudgeError
             errs.append({"bid": bid, "error": str(e)[:200]})
             continue
-        met = {i: m[i] for i in range(1, len(exps) + 1)}  # strict met_map: exactly these ids
+        met = {i: met[i] for i in range(1, len(exps) + 1)}
         cells.append({"bid": bid, "arm": r["arm"], "scenario": str(ev["id"]), "met": met})
     return cells, errs
 
@@ -151,16 +161,28 @@ def main():
         if rel:
             sys.exit(f"--{arm['name']}-cmd: {rel} are relative paths; arms run from an empty temp "
                      f"dir, where they would not resolve — make them absolute")
+    for ev in evals:  # checks also run from an empty temp dir; refuse before any spend
+        for e in ev["expectations"]:
+            c = check_of(e)
+            if isinstance(e, dict) and "check" in e and not (
+                    isinstance(c, list) and c and all(isinstance(x, str) for x in c)):
+                sys.exit(f"eval {ev['id']}: a check must be a non-empty argv list of strings")
+            if c and relative_path_args(c):
+                sys.exit(f"eval {ev['id']}: check {relative_path_args(c)} are relative paths; "
+                         f"checks run from an empty temp dir — make them absolute")
+    n_judged = sum(any(not check_of(e) for e in ev["expectations"]) for ev in evals)
     gaps = lockdown_gaps(arms)
     for g in gaps:  # before the spend prompt, so a dry run shows it
         print("WARNING: arms not locked down — " + g, file=sys.stderr)
     n_gen = len(evals) * 2 * a.reps
     require_yes(a.yes, f"{len(evals)} tasks x 2 arms x {a.reps} reps = {n_gen} generations + "
-                       f"{n_gen} judge calls (judge={a.judge}, substrate={a.substrate})")
+                       f"{n_judged * 2 * a.reps} judge calls (judge={a.judge}, "
+                       f"substrate={a.substrate})")
 
     sub = make_substrate(a.substrate)
-    judge = make_judge(a.judge)  # 'auto' resolves per judge.AUTO_ORDER; raises with remedy if none
-    if judge.fallback_note:
+    # 'auto' resolves per judge.AUTO_ORDER; raises with remedy if none. Script checks only: no judge.
+    judge = make_judge(a.judge) if n_judged else None
+    if judge and judge.fallback_note:
         print("NOTE: " + judge.fallback_note, file=sys.stderr)
     tasks = [e["task"] for e in evals]
     gen = []
@@ -178,9 +200,10 @@ def main():
         elif isinstance(pid, str) and pid.isdigit():
             g["prompt_id"] = evals[int(pid)]["id"]
     cells, errs = grade_all(gen, evals_by_id, judge)
-    report = {"skill_evals": a.evals, "judge": judge.name, "n_tasks": len(evals),
+    report = {"skill_evals": a.evals, "judge": judge.name if judge else "none (script checks only)",
+              "n_tasks": len(evals),
               "n_reps": a.reps, "errors": errs, **aggregate(cells, practical=a.practical)}
-    if judge.fallback_note:  # same-family judge: the caveat travels with the numbers
+    if judge and judge.fallback_note:  # same-family judge: the caveat travels with the numbers
         report["judge_fallback"] = judge.fallback_note
     if gaps:  # unverified isolation: same pattern, a possible confounded null
         report["arm_isolation_unverified"] = gaps

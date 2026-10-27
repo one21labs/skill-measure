@@ -41,7 +41,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/bench_skill.py" --evals <evals.json> \
   [--judge auto] [--substrate native|promptfoo] [--reps 3] [--practical <bar>] --yes
 ```
 
-- `--evals`: JSON list of `{id, task, expectations:[...]}`. Arms differ ONLY in skill loading (arm
+- `--evals`: JSON list of `{id, task, expectations:[...]}`. An expectation that can execute is
+  `{text, check:[absolute argv]}`, graded by script, not the judge
+  ([empirical-evals.md](references/empirical-evals.md#grading-reliability-with-a-same-family-judge-adr-0019)). Arms differ ONLY in skill loading (arm
   symmetry) — the task is appended as the final CLI arg. Arms run from an empty temp dir, so every
   path in `--with-cmd`/`--without-cmd` must be absolute. Both arms still see your installed
   plugins, account-synced skills and CLAUDE.md unless locked down: a credentials-only
