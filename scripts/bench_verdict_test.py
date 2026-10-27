@@ -380,6 +380,13 @@ class TestTopCellAttribution(unittest.TestCase):
         self.assertEqual(bs.keep_verdict(bs.clustered_delta(cells, "C", "B"))["verdict"], "KEEP")
         self.assertTrue(bs.top_cell_attribution(cells, "C", "B")["inspect"])
 
+    def test_tied_rows_report_the_same_top_in_any_cell_order(self):
+        # live grades arrive in completion order, cached ones in file order
+        cells = [cell("c1", "C", "S1", [1, 1, 1, 0]), cell("c2", "C", "S2", [1, 1, 1, 0]),
+                 cell("b1", "B", "S1", [1, 1, 0, 0]), cell("b2", "B", "S2", [1, 1, 0, 0])]
+        top = lambda cs: [r["bid"] for r in bs.top_cell_attribution(cs, "C", "B", 4)["top"]]
+        self.assertEqual(top(cells), top(cells[::-1]))
+
     def test_inspect_covers_every_cell_not_only_those_shown(self):
         cells = ([cell(f"c{s}{r}", "C", f"S{s}", [1, 1, 0, 0]) for s in (1, 2) for r in (1, 2, 3)]
                  + [cell("p11", "P", "S1", [1, 1, 0, 0]), cell("p12", "P", "S1", [1, 1, 0, 0]),
@@ -462,6 +469,14 @@ class TestLoadDirAndCache(unittest.TestCase):
         out, errs = bv.regrade(None, cells, {}, 1, cache=cache)
         self.assertEqual([c["bid"] for c in out], ["c1"])
         self.assertEqual({e["bid"] for e in errs}, {"b1", "c2"})
+
+    def test_a_malformed_old_format_cache_key_is_an_error_row_not_a_crash(self):
+        import bench_verdict as bv
+        cells = [{"bid": b, "arm": a, "scenario": s} for b, a, s, _ in GRID[:2]]
+        cache = [{"bid": "c1", "met": {"one": True}}, {"bid": "b1", **exps([1, 1, 1, 1])}]
+        out, errs = bv.regrade(None, cells, {}, 1, cache=cache)
+        self.assertEqual([c["bid"] for c in out], ["b1"])
+        self.assertEqual([e["bid"] for e in errs], ["c1"])
 
     def test_a_cell_with_no_verdict_row_or_no_cache_row_is_a_named_error(self):
         # Round 4: a scenario whose rows were absent was skipped silently — its arm dropped, the

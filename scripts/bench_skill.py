@@ -47,6 +47,7 @@ def grade_all(gen_rows, evals_by_id, judge):
 
 
 PATH_FLAG = re.compile(r"(dir|file|path|settings|config)$")
+FILE_EXT = re.compile(r"\.[A-Za-z]\w*$")  # cfg.json, notes.md; not a version like 4.5
 
 
 def relative_path_args(argv):
@@ -54,8 +55,8 @@ def relative_path_args(argv):
     temp dir (NativeSubstrate), where these silently miss (the skill not loaded) or fail to
     launch. argv[0] resolves through PATH, so only a slash makes it cwd-relative. A later arg,
     or the value of `--flag=value`, counts when it exists here and looks like a path: it has a
-    slash, starts with `.`, or follows a flag named like a path (`--plugin-dir myplug`); a plain
-    option value such as `--model sonnet` never does."""
+    slash, starts with `.`, ends in a file extension (`-c cfg.json`), or follows a flag named like
+    a path (`--plugin-dir myplug`); a plain option value such as `--model sonnet` never does."""
     out = []
     for i, a in enumerate(argv):
         if i == 0:
@@ -63,7 +64,8 @@ def relative_path_args(argv):
                 out.append(a)
             continue
         flag, val = (a.split("=", 1) if a.startswith("-") and "=" in a else (argv[i - 1], a))
-        pathlike = "/" in val or val.startswith(".") or PATH_FLAG.search(flag.lstrip("-"))
+        pathlike = ("/" in val or val.startswith(".") or FILE_EXT.search(val)
+                    or PATH_FLAG.search(flag.lstrip("-")))
         if val and not os.path.isabs(val) and os.path.exists(val) and pathlike:
             out.append(a)
     return out

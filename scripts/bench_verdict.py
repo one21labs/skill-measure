@@ -90,7 +90,7 @@ def regrade(judge, cells, keys, workers, cache=None):
                 if "expectations" not in r and isinstance(r.get("met"), dict):  # pre-12-Oct shape
                     r = {"expectations": [{"id": int(i), "met": m} for i, m in r["met"].items()]}
                 out.append({**c, "met": met_map(r, len(benchstats.EXP_IDS))})
-            except JudgeError as e:
+            except (JudgeError, ValueError) as e:  # ValueError: an old-format key that is not an int
                 errs.append({"bid": c["bid"], "error": str(e)[:200]})
         return out, errs
     with ThreadPoolExecutor(max_workers=workers) as ex:
