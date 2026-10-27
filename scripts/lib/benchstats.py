@@ -288,7 +288,10 @@ def top_cell_attribution(cells, x, y, top_n=3, practical=0.0):
                      "loo_mean": None if math.isnan(loo) else round(loo, 4),
                      "delta_vs_base": None if math.isnan(loo) else round(base - loo, 4),
                      "flips_or_halves": flips or halves})
-    rows.sort(key=lambda r: (r["delta_vs_base"] is not None, -(abs(r["delta_vs_base"] or 0))))
+    # bid breaks ties: live grades arrive in completion order, cached ones in file order, and the
+    # same cells must report the same top rows either way
+    rows.sort(key=lambda r: (r["delta_vs_base"] is not None, -(abs(r["delta_vs_base"] or 0)),
+                             str(r["bid"])))
     return {"base_mean": None if math.isnan(base) else round(base, 4), "top": rows[:top_n],
             "inspect": any(r["flips_or_halves"] for r in rows)}
 

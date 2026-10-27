@@ -198,8 +198,9 @@ class TestBenchSkill(unittest.TestCase):
         # path-named flag's value are checked; a plain option value is never refused.
         cwd = os.getcwd()
         with tempfile.TemporaryDirectory() as d:
-            for name in ("claude", "sonnet", "myplug"):
+            for name in ("claude", "sonnet", "myplug", "opus-4.5"):
                 os.makedirs(os.path.join(d, name))
+            open(os.path.join(d, "cfg.json"), "w").close()
             os.chdir(d)
             try:
                 self.assertEqual(bs.relative_path_args(["claude", "-p", "--model", "sonnet"]), [])
@@ -208,6 +209,9 @@ class TestBenchSkill(unittest.TestCase):
                 self.assertEqual(bs.relative_path_args(["claude", "--plugin-dir", "myplug"]),
                                  ["myplug"])
                 self.assertEqual(bs.relative_path_args(["claude", "--plugin-dir=/abs/x"]), [])
+                # a value that names a file by its extension, after a flag not named like a path
+                self.assertEqual(bs.relative_path_args(["claude", "-c", "cfg.json"]), ["cfg.json"])
+                self.assertEqual(bs.relative_path_args(["claude", "--model", "opus-4.5"]), [])
             finally:
                 os.chdir(cwd)
 
