@@ -108,6 +108,11 @@ bias, family blind spots, and judge noise. Mitigation stack, in priority order:
    the failure input, run a linter for dead code, grep for the banned pattern — grade from
    observed behavior. The model judges only what cannot execute. An executable check has no
    family bias at all; eval authors write assertions to be executable wherever possible.
+   In `/bench skill`, write one as `{"text": ..., "check": [absolute argv]}`: the check reads
+   the arm's reply on stdin (and at `$BENCH_OUTPUT_FILE`), exit 0 = met, 1 = not met, anything
+   else or a timeout = an excluded error cell. The judge grades only the other expectations
+   and is not called when none remain. Checks run in an empty temp dir with a timeout and
+   nothing more, so a check that runs model-written code brings its own sandbox (docker, say).
 2. **Planted-defect calibration.** Per benchmark cycle, grade a small known-truth set: real
    outputs with deliberately injected violations plus known-clean ones. The grader's
    false-pass / false-fail rate per assertion class is ground truth by construction — it
