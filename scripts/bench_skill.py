@@ -152,7 +152,8 @@ def main():
     if a.reps < 1:
         sys.exit("--reps must be >= 1")
 
-    evals = json.load(open(a.evals))
+    with open(a.evals) as f:
+        evals = json.load(f)
     evals_by_id = {e["id"]: e for e in evals}
     arms = [{"name": "with", "cmd": json.loads(a.with_cmd)},
             {"name": "without", "cmd": json.loads(a.without_cmd)}]
@@ -208,7 +209,11 @@ def main():
     if gaps:  # unverified isolation: same pattern, a possible confounded null
         report["arm_isolation_unverified"] = gaps
     js = report_json(report)
-    print(js) if a.out == "-" else open(a.out, "w").write(js)
+    if a.out == "-":
+        print(js)
+    else:
+        with open(a.out, "w") as f:
+            f.write(js)
 
 
 if __name__ == "__main__":

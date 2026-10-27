@@ -422,7 +422,7 @@ def probe(judge):
         judge.grade(PROBE_PROMPT, PROBE_SCHEMA)
     except JudgeUnreachable:
         raise
-    except (JudgeError, ValueError):
+    except JudgeError:
         pass
 
 

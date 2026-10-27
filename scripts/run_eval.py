@@ -303,6 +303,7 @@ def run_single_query(
             if process.poll() is None:
                 process.kill()
                 process.wait()
+            process.stdout.close()  # VENDORED: upstream left the pipe open (ResourceWarning)
 
         return session_verdict(timed_out, saw_result, process.returncode, state.triggered)
     finally:
