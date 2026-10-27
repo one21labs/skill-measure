@@ -24,7 +24,8 @@ def load(env=None):
     path = env.get("SKILL_BENCH_CONFIG")
     if path and os.path.exists(path):
         try:
-            cfg.update({k: v for k, v in json.load(open(path)).items() if k in DEFAULTS})
+            with open(path) as f:
+                cfg.update({k: v for k, v in json.load(f).items() if k in DEFAULTS})
         except Exception:
             pass  # a malformed config file falls through to defaults, never crashes a run
     for key, var in _ENV.items():

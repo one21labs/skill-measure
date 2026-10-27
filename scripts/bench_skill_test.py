@@ -167,7 +167,8 @@ class TestBenchSkill(unittest.TestCase):
                 mock.patch.object(bs, "make_judge", lambda n: judge), \
                 mock.patch.object(sys, "argv", argv), mock.patch("sys.stderr"):
             bs.main()
-        self.assertEqual(json.load(open(out))["judge_fallback"], judge.fallback_note)
+        with open(out) as f:
+            self.assertEqual(json.load(f)["judge_fallback"], judge.fallback_note)
 
     def test_relative_arm_paths_are_refused_before_any_spend(self):
         # Round 4: arms run from an empty temp dir, so a relative skill path silently loaded
@@ -177,7 +178,8 @@ class TestBenchSkill(unittest.TestCase):
             os.makedirs(os.path.join(d, "skills", "x"))
             open(os.path.join(d, "skills", "x", "SKILL.md"), "w").close()
             ev = os.path.join(d, "evals.json")
-            json.dump(EVALS, open(ev, "w"))
+            with open(ev, "w") as f:
+                json.dump(EVALS, f)
             absolute = os.path.join(d, "skills", "x", "SKILL.md")
             self.assertEqual(bs.relative_path_args(["claude", "-p", "--file", absolute]), [])
             for cmd in (["claude", "-p", "--file", "skills/x/SKILL.md"], ["./arm.sh"]):

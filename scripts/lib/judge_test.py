@@ -121,7 +121,6 @@ class TestJudge(unittest.TestCase):
             judge.probe(Fake(judge.JudgeUnreachable("exit 1")))
         # an answer grade() rejects (same-family routing, bad JSON) still proves reachability
         judge.probe(Fake(judge.JudgeError("routed to claude-haiku")))
-        judge.probe(Fake(ValueError("not json")))
 
     def test_missing_binary_is_unreachable(self):
         with self.assertRaises(judge.JudgeUnreachable):

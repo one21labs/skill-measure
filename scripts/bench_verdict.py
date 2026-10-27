@@ -210,7 +210,8 @@ def main():
     if a.out == "-":
         print(js)
     else:
-        open(a.out, "w").write(js)
+        with open(a.out, "w") as f:
+            f.write(js)
         print(f"wrote {a.out}", file=sys.stderr)
 
 

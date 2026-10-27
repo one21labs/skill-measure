@@ -112,13 +112,15 @@ class PromptfooSubstrate:
         providers = [{"name": a["name"], "exec": "bash " + _write_arm_wrapper(workdir, a)} for a in arms]
         cfg = os.path.join(workdir, "promptfooconfig.json")
         out = os.path.join(workdir, "results.json")
-        json.dump(build_promptfoo_config(prompts, providers), open(cfg, "w"), indent=1)
+        with open(cfg, "w") as f:
+            json.dump(build_promptfoo_config(prompts, providers), f, indent=1)
         r = subprocess.run(self.argv + ["eval", "-c", cfg, "-o", out, "--no-cache"],
                            capture_output=True, text=True, timeout=1800, cwd=workdir,
                            env=arm_env())
         if not os.path.exists(out):
             raise RuntimeError(f"promptfoo produced no output: {r.stderr[-400:]}")
-        return parse_promptfoo_output(json.load(open(out)))
+        with open(out) as f:
+            return parse_promptfoo_output(json.load(f))
 
 
 class NativeSubstrate:
