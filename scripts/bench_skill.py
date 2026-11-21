@@ -106,13 +106,22 @@ def load_evals(path):
     return out
 
 
+ENV_FLAGS_TAKING_A_VALUE = ("-u", "--unset", "-C", "--chdir")
+
+
 def program_of(argv):
-    """The program an arm argv launches: argv[0], or the first word after an `env K=V ...` prefix."""
+    """The program an arm argv launches: argv[0], or the first word after an `env` prefix of
+    flags (`-i`, `-u NAME`) and `K=V` assignments."""
     i = 0
     if argv and os.path.basename(argv[0]) == "env":
         i = 1
-        while i < len(argv) and "=" in argv[i]:
-            i += 1
+        while i < len(argv):
+            if argv[i] in ENV_FLAGS_TAKING_A_VALUE:
+                i += 2
+            elif argv[i].startswith("-") or "=" in argv[i]:
+                i += 1
+            else:
+                break
     return argv[i] if i < len(argv) else None
 
 
@@ -123,8 +132,8 @@ def missing_programs(arms, which=shutil.which):
     for arm in arms:
         prog = program_of(arm["cmd"])
         if not prog or which(prog) is None:
-            out.append(f"--{arm['name']}-cmd: {prog or 'no program'} is not installed or not on "
-                       f"PATH. The Claude desktop app alone does not put `claude` on PATH — "
+            out.append(f"--{arm['name']}-cmd: {prog or 'no program'} is not installed, not "
+                       f"executable, or not on PATH. The Claude desktop app alone does not put `claude` on PATH — "
                        f"install the CLI (https://code.claude.com/docs/en/setup) or give the "
                        f"program's absolute path")
     return out

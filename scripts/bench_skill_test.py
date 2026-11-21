@@ -325,6 +325,8 @@ class TestMissingPrograms(unittest.TestCase):
     def test_program_is_argv0_or_the_word_after_an_env_prefix(self):
         self.assertEqual(bs.program_of(["claude", "-p"]), "claude")
         self.assertEqual(bs.program_of(["env", "A=1", "B=2", "/opt/claude", "-p"]), "/opt/claude")
+        self.assertEqual(bs.program_of(["env", "-i", "A=1", "claude"]), "claude")
+        self.assertEqual(bs.program_of(["env", "-u", "X", "--unset", "Y", "claude"]), "claude")
         self.assertIsNone(bs.program_of(["env", "A=1"]))
         self.assertIsNone(bs.program_of([]))
 
@@ -347,7 +349,7 @@ class TestMissingPrograms(unittest.TestCase):
                                 "--without-cmd", '["no-such-program-xyz", "-p"]', "--yes"],
                                capture_output=True, text=True, cwd=d)
         self.assertNotEqual(r.returncode, 0)
-        self.assertIn("not installed or not on PATH", r.stderr)
+        self.assertIn("not installed, not executable, or not on PATH", r.stderr)
         self.assertNotIn("[cost]", r.stderr)
 
 
