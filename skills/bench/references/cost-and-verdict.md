@@ -12,24 +12,19 @@ $0 marginal, not $0 real.
 `notional_cost_usd` in the report carries the judge call count and the priced total. Cached
 re-analysis reports zero (no live calls).
 
-A pre-registration states a NUMERIC judge/grading-cost estimate on this same notional basis
-(generation spend already has cost-pilot-first + cost_gate; grading had no analogous
-checkpoint, retired ADR 0066). When the measured figure exceeds the estimate by more than 2x,
-record the gap in the verdict README and the routing ADR's Act. A hard stop on notional spend
-was declined — machinery without dollars.
+A pre-registration states a NUMERIC judge/grading-cost estimate on this same notional basis.
+When the measured figure exceeds the estimate by more than 2x, record the gap in the verdict
+README and the routing ADR's Act.
 
 **The initial estimate is DERIVED, never guessed (retired ADR 0076):** take the most recent
 measured $/cell for the same judge/model from a prior committed `metadata.json` cost block (grep
 your own `benchmarks/*/metadata.json` for `actuals`); no prior exists → run the 2-cell pilot BEFORE
-recording any number. Three guessed estimates missed by 2-17x (ADR 0061; PR #219; PR #227). A
-mechanical warn is the named escalation if guessing recurs despite this rule.
+recording any number. Three guessed estimates missed by 2-17x.
 
 **`ceiling_usd` derivation (ADR 0073):** the generation cost gate's `ceiling_usd` is set to 2x
 the pre-registered notional estimate — the >2x stop-rule of record — NEVER the estimate itself.
 Encoding the estimate band's top as the ceiling forces a mid-run revision the moment a pilot
-projects above it (realized in
-`one21labs/one21tools:benchmarks/2026-07-17-thirdparty-writing-plans/`); the stop rule and the
-mechanical gate must be the same number.
+projects above it; the stop rule and the mechanical gate must be the same number.
 
 **Accepted overshoot (one21labs/skill-measure#1):** the grid's pre-launch backstop
 (`cost_gate.admit`) reserves each call's per-arm estimate, so the cap holds only as well as the

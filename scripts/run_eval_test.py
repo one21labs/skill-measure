@@ -15,6 +15,7 @@ import json
 import unittest
 from pathlib import Path
 
+import run_eval
 from run_eval import (DetectState, detect_trigger_line, planned_runs, run_single_query,
                       session_verdict, summarize_query, summarize_results)
 
@@ -311,6 +312,16 @@ class TestSpendGuard(unittest.TestCase):
         self.assertIn("spend guard", r.stderr)
         self.assertIn("[cost]", r.stderr)
 
+
+
+class UnsupportedMachine(unittest.TestCase):
+    """Native Windows and a machine with no `claude` on PATH (the desktop app alone installs
+    none) are refused by name; before this each query just timed out."""
+
+    def test_refusals_and_the_supported_case(self):
+        self.assertIn("macOS, Linux or WSL", run_eval.unsupported_here("nt", lambda p: "/x"))
+        self.assertIn("not on PATH", run_eval.unsupported_here("posix", lambda p: None))
+        self.assertIsNone(run_eval.unsupported_here("posix", lambda p: "/usr/bin/claude"))
 
 
 if __name__ == "__main__":

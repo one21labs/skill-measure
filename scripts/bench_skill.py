@@ -5,7 +5,8 @@ Generate each eval task under two arms (skill-loaded vs bare) via the rented sub
 output against pre-registered expectations with the cross-family judge, and report the with-without
 fraction-met delta + KEEP/CUT verdict (ADR 0025 shape). Reuses benchstats for the math.
 
-Eval file: JSON list of {"id","task","expectations":[...]}. An expectation is a string the judge
+Eval file: JSON list of {"id","task","expectations":[...]}, or a skill folder's evals/evals.json
+in skill-creator's schema (load_evals). An expectation is a string the judge
 grades, or {"text", "check": [argv...]} that a script grades instead (lib/script_check.py). Arms: {"with":[argv...],"without":[argv...]}
 where the task text is appended as the final CLI arg. Substrate + judge are injected so the
 orchestration core (grade_all/aggregate) is unit-testable offline (see bench_skill_test.py).
@@ -13,7 +14,7 @@ orchestration core (grade_all/aggregate) is unit-testable offline (see bench_ski
 Prints a cost estimate and refuses to spend without --yes (the refusal ADR 0016 made the
 condition for /bench being model-invocable at all).
 """
-import argparse, json, os, re, sys
+import argparse, json, os, re, shutil, sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 import rubric, benchstats  # noqa: E402
@@ -81,6 +82,54 @@ def relative_path_args(argv):
     return out
 
 
+def load_evals(path):
+    """The eval list from either accepted file shape: a bare list of {"id","task","expectations"},
+    or skill-creator's schema, {"skill_name","evals":[{"id","prompt","expectations"}]} — the
+    evals/evals.json a skill folder carries, where "prompt" is the task. Exits naming the eval on
+    a shape this runner cannot measure, before any spend."""
+    with open(path) as f:
+        data = json.load(f)
+    evals = data.get("evals") if isinstance(data, dict) else data
+    if not isinstance(evals, list) or not evals:
+        sys.exit(f"--evals {path}: expected a non-empty list of evals, or an object with an "
+                 f"'evals' list (skill-creator's schema)")
+    out = []
+    for n, e in enumerate(evals, 1):
+        task = (e.get("task") or e.get("prompt")) if isinstance(e, dict) else None
+        if not task or "id" not in e or not e.get("expectations"):
+            sys.exit(f"--evals {path}: eval #{n} needs 'id', 'task' (or 'prompt') and a non-empty "
+                     f"'expectations' list")
+        if e.get("files"):  # arms run from an empty temp dir; measuring without them is a lie
+            sys.exit(f"--evals {path}: eval {e['id']} lists input 'files', which this runner does "
+                     f"not stage — inline them in the task text")
+        out.append({**e, "task": task})
+    return out
+
+
+def program_of(argv):
+    """The program an arm argv launches: argv[0], or the first word after an `env K=V ...` prefix."""
+    i = 0
+    if argv and os.path.basename(argv[0]) == "env":
+        i = 1
+        while i < len(argv) and "=" in argv[i]:
+            i += 1
+    return argv[i] if i < len(argv) else None
+
+
+def missing_programs(arms, which=shutil.which):
+    """Arm programs that are not installed, as refusal lines. Without this check every cell fails
+    to launch and the run ends NO-DATA with exit 0, which reads as a result."""
+    out = []
+    for arm in arms:
+        prog = program_of(arm["cmd"])
+        if not prog or which(prog) is None:
+            out.append(f"--{arm['name']}-cmd: {prog or 'no program'} is not installed or not on "
+                       f"PATH. The Claude desktop app alone does not put `claude` on PATH — "
+                       f"install the CLI (https://code.claude.com/docs/en/setup) or give the "
+                       f"program's absolute path")
+    return out
+
+
 LOCKDOWN_FLAGS = ("--disable-slash-commands", "--strict-mcp-config")
 USER_CONTEXT_FILES = ("settings.json", "CLAUDE.md")
 
@@ -130,7 +179,8 @@ def aggregate(cells, with_arm="with", without_arm="without", practical=0.0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--evals", required=True, help="JSON list of {id, task, expectations[]}")
+    ap.add_argument("--evals", required=True, help="JSON list of {id, task, expectations[]}, or a skill's evals/evals.json "
+                         "(skill-creator schema)")
     arm_note = ("; arms run from an empty temp dir, so every path in it must be absolute")
     ap.add_argument("--with-cmd", required=True,
                     help="argv (JSON list) for the skill-loaded arm" + arm_note)
@@ -152,8 +202,7 @@ def main():
     if a.reps < 1:
         sys.exit("--reps must be >= 1")
 
-    with open(a.evals) as f:
-        evals = json.load(f)
+    evals = load_evals(a.evals)
     evals_by_id = {e["id"]: e for e in evals}
     arms = [{"name": "with", "cmd": json.loads(a.with_cmd)},
             {"name": "without", "cmd": json.loads(a.without_cmd)}]
@@ -171,6 +220,9 @@ def main():
             if c and relative_path_args(c):
                 sys.exit(f"eval {ev['id']}: check {relative_path_args(c)} are relative paths; "
                          f"checks run from an empty temp dir — make them absolute")
+    missing = missing_programs(arms)
+    if missing:
+        sys.exit("\n".join(missing))
     n_judged = sum(any(not check_of(e) for e in ev["expectations"]) for ev in evals)
     gaps = lockdown_gaps(arms)
     for g in gaps:  # before the spend prompt, so a dry run shows it

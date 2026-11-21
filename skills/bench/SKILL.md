@@ -41,7 +41,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/bench_skill.py" --evals <evals.json> \
   [--judge auto] [--substrate native|promptfoo] [--reps 3] [--practical <bar>] --yes
 ```
 
-- `--evals`: JSON list of `{id, task, expectations:[...]}`. An expectation that can execute is
+- `--evals`: JSON list of `{id, task, expectations:[...]}`, or a skill folder's
+  `evals/evals.json` as it is (skill-creator's schema). An expectation that can execute is
   `{text, check:[absolute argv]}`, graded by script, not the judge
   ([empirical-evals.md](references/empirical-evals.md#grading-reliability-with-a-same-family-judge-adr-0019)). Arms differ ONLY in skill loading (arm
   symmetry) — the task is appended as the final CLI arg. Arms run from an empty temp dir, so every
@@ -67,8 +68,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run_eval.py" --eval-set <path> --skill-pa
   [--description "<variant text>"]
 ```
 
-- Linux/WSL-only. Run protocol and validity rules (why `--num-workers 1`, timeouts, A/B deltas
-  only): [description-ablation.md](references/description-ablation.md).
+- macOS, Linux or WSL (not native Windows), with the `claude` CLI on PATH. Run protocol and
+  validity rules (why `--num-workers 1`, timeouts, A/B deltas only):
+  [description-ablation.md](references/description-ablation.md).
 
 ## Guardrails (all subcommands)
 

@@ -20,7 +20,8 @@ cost makes triggering moot. Measure separately.
 The skill-measure plugin's `scripts/run_eval.py` (`/bench trigger`) — vendored from
 anthropics/skills' skill-creator with 4 correctness fixes (3 stream patches + timeout-as-null)
 plus a testability extraction (ADR 0033); `run_eval_test.py` guards the fixed detection and
-aggregation logic. Linux/WSL-only (`select.select()` on a subprocess pipe fd).
+aggregation logic. macOS, Linux or WSL (`select.select()` on a subprocess pipe fd; not native
+Windows).
 
 ## Validity: absolute rates are NEVER reportable
 
@@ -48,7 +49,7 @@ absolute rate, and never compare rates across different runs, fields, or environ
 
 ## Run protocol
 
-1. WSL only.
+1. macOS, Linux or WSL (measured on WSL only).
 2. Pin `CLAUDE_CONFIG_DIR` to an empty dir seeded with only `.credentials.json` (auth, nothing
    else) — no installed plugins, no cached session state, so the run isn't shadowed. Trigger-runner
    instance of empirical-evals.md's hermetic-executor rule.

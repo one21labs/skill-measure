@@ -31,8 +31,9 @@ Execution runs natively (`/bench skill`) or DELEGATED to skill-creator's benchma
 arms, graded assertions, token/time stats). Either way skill-measure adds what upstream lacks:
 the cost-per-benefit verdict with a confidence interval.
 
-`/bench skill` takes its own eval list (`[{id, task, expectations[]}]`) and prints its own
-KEEP/CUT (SKILL.md); the schema, running, and verdict steps below are the skill-creator route.
+`/bench skill` takes its own eval list (`[{id, task, expectations[]}]`) or the `evals/evals.json`
+below as it is (`prompt` is the task), and prints its own KEEP/CUT (SKILL.md); the running and
+verdict steps below are the skill-creator route.
 
 ## Setup
 
@@ -64,8 +65,7 @@ Disciplines:
   does not help that task — is a valid measurement, not dead weight. Deleting nulls biases the
   set toward skill-favorable evals (survivorship) and the delta-per-1k verdict then overstates.
   Fix a non-discriminating eval by REWRITING it to a harder case after transcript-level
-  diagnosis — never a blind "make it harder" pass (that regressed 6 cells; see
-  one21labs/one21tools:benchmarks/2026-07-07-toolkit-grid/retune-results.md), never by deletion. (Distinct from a
+  diagnosis — never a blind "make it harder" pass, never by deletion. (Distinct from a
   non-discriminating ASSERTION within an eval, which IS cut — see the DISCRIMINATE rule above.)
 
 ## Running the benchmark
@@ -74,11 +74,11 @@ Run skill-creator's benchmark mode over the eval set with **at least 3 runs per
 configuration** (LLM sampling is noisy; single runs are anecdotes), then its aggregation.
 Escalated looks (replicates added where the CI straddles the bar) are DIAGNOSTIC: re-reading
 inflates false KEEPs (optional stopping). A confirmatory verdict needs a
-fresh pre-registered grid (ADR 0095 decision 4 shape).
+fresh pre-registered grid.
 
 Pre-screen task selection for a NEW comparison type: discriminative power is
 comparison-specific — a battery built for skill-presence ablation can floor on a model-tier
-comparison (2026-07-10 tiered runs: most of the 24-eval battery scored 0 in every arm). Run
+comparison. Run
 each task once per arm first; keep only tasks that separate the arms (an all-floor or all-ceiling
 task is a guaranteed tie that dilutes the delta and burns grading budget). Two guards: screening
 reps never count toward the verdict (selected tasks partly regress on re-measure), and report the
@@ -165,7 +165,7 @@ per-cell verdict records plus a `metadata.json`: executor model, eval-set conten
 protocol/ADR version, blinded (y/n), **hermetic (y/n)**, the denominator basis, and (when raw is
 retained) the `sample_rule`. JSON/JSONL is the SSoT; any markdown view is rendered from it, never
 hand-maintained. Append-only, never edited: a snapshot is a measurement record as of its date, not
-current truth. It is the stored baseline `--fail-under` and regression-vs-history need.
+current truth.
 
 **Hermetic executor gates a verdict (ADR 0023).** A run counts toward a keep/cut verdict only if
 the control arm had zero installed plugins and zero repo/skill file read access — a cloud container,
@@ -176,9 +176,7 @@ verdict.
 
 **Auditable raw sample (ADR 0023).** Retain the raw graded text for a bounded, deterministically
 defined sample — the planted-defect calibration set + every cell whose CI straddles the verdict
-boundary — ON main under `benchmarks/<date>/audit/` (git self-verifies it: no per-cell hash, no
-off-main bundle). It is what the prosecutor / sampled-agreement / human-calibration passes and ADR
-0019's re-grade reopen-conditions read; `eval_verdict.py` re-derives `sample_rule` and fails if any
+boundary — ON main under `benchmarks/<date>/audit/`. `eval_verdict.py` re-derives `sample_rule` and fails if any
 selected cell's transcript is missing (the silent-drop tripwire). Keep raw only if a consumer reads
 it — retention turns on WITH that check, not before.
 
@@ -195,5 +193,3 @@ Which content within an always-loaded skill or CLAUDE.md earns its place:
   ([description-ablation.md](description-ablation.md), ADR 0033).
 - **Deltas are model- and eval-relative** — re-benchmark before comparing verdicts across
   model generations; record the executor model (benchmark.json metadata carries it).
-- Upstream gaps worth routing upstream, not forking (ADR 0013): an independent grader
-  model flag, CI fail-under, regression-vs-history.

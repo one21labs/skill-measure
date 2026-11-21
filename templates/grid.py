@@ -112,6 +112,10 @@ def main():
     out = HERE / ("pilot-outputs" if args.pilot else "outputs")
     out.mkdir(exist_ok=True)
     env = build_env()
+    if not os.path.isdir(env["CLAUDE_CONFIG_DIR"]):  # else every cell fails as "not logged in"
+        sys.exit(f"CLAUDE_CONFIG_DIR {env['CLAUDE_CONFIG_DIR']} does not exist: create a "
+                 f"credentials-only Claude config dir and set $SKILL_BENCH_CONFIG_DIR to it "
+                 f"(README, Portability)")
     # Seed with prior invocations' committed spend so the ceiling backstop below compares
     # CUMULATIVE cost across checkpoint/resume, not this invocation's alone (#233).
     state = {"spent": spent_so_far(out), "reserved": 0.0, "halt": False}

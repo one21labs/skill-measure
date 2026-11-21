@@ -1,6 +1,6 @@
 {
   "name": "skill-measure",
-  "description": "Hermetic measurement harness for Claude Code skills: paired with/without value benchmarks, description-ablation trigger tests, blind grading with an adversarial prosecutor and a pluggable cross-family judge, cost-gated spend, and pre-registration discipline. Wraps a rented execution substrate (promptfoo, version-pinned; native fallback) under a bespoke causal + pre-registration layer.",
+  "description": "Measure whether a skill earns its context cost: /bench runs a task with the skill and without it, grades both blind with a judge from another model family, and reports a keep-or-cut verdict with its cost. Needs python3 (3.9+) and the claude command-line program on PATH.",
   "author": {
     "name": "Andrew McCausland"
   }
