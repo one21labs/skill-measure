@@ -9,6 +9,28 @@ grok/copilot judges.
 /plugin install skill-measure@skill-measure
 ```
 
+**Claude desktop app:** open Customize, select Plugins, select Add, select Add marketplace, enter
+`one21labs/skill-measure`, then install the plugin. In the Code tab the two commands above also
+work typed into a session.
+
+## Where it runs
+
+`/bench` runs programs on your machine, so it works where a session can run them:
+
+| Surface | Works? | What it needs |
+|---|---|---|
+| Claude Code in a terminal | Yes | `python3` 3.9 or newer; the `claude` CLI for `skill` and `trigger` |
+| Desktop app, Code tab | Yes, same needs | The `claude` CLI must be installed separately and on PATH — the app alone is not documented to provide it. `/bench` refuses with that message before spending anything. |
+| Desktop app, Cowork | Not tested | The skill loads; whether Cowork's sandbox has `python3` and `claude` is not documented. `verdict --cache` needs only `python3`. |
+| Chat | No | Chat cannot run local programs. |
+
+`trigger` needs macOS, Linux or WSL; it refuses on native Windows. Measured on Linux and WSL
+only — the Mac path is untested by us.
+
+**With [one21tools](https://github.com/one21labs/one21tools):** the two install side by side
+(no shared names), and `/bench skill --evals` reads a skill folder's `evals/evals.json` as that
+repo's `building-skills` skill teaches you to write it.
+
 `ADR NNNN` and `#NNN` cites refer to [one21labs/one21tools](https://github.com/one21labs/one21tools),
 where this plugin was built: its `docs/decisions/` log and issue tracker (plan: one21labs/one21tools#170).
 
@@ -104,8 +126,8 @@ ADR 0058). What a consumer must provide / knows:
   set `$SKILL_BENCH_CONFIG_DIR` to a clean credentials-only Claude config dir. The default,
   `~/issue30/claude-config`, is the author's machine layout and won't exist elsewhere. The Claude judge uses `$SKILL_BENCH_CONFIG_DIR` when
   set, else your own login.
-- **Platform:** the hermetic CLAUDE.md-discovery behavior and `/bench trigger` are Linux/WSL-only
-  (#170 hard-problem 4).
+- **Platform:** see "Where it runs". The hermetic CLAUDE.md-discovery behavior was measured on
+  Linux/WSL only (#170 hard-problem 4).
 
 ## Status
 Runnable: `/bench` with `verdict` + `skill` + `trigger` subcommands (native substrate +

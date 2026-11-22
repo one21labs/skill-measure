@@ -24,6 +24,19 @@ jobs:
             echo "== $t"
             python3 "$t"
           done
+      - name: "harness tests on Python 3.9 — the python3 a Mac ships"
+        # One script failed to import there before this step. setup-python has no 3.9 build for
+        # this runner image, so uv fetches a standalone one.
+        run: |
+          set -e
+          python3 -m pip install --quiet uv
+          uv python install 3.9
+          py39="$(uv python find 3.9)"
+          "$py39" --version
+          for t in scripts/*_test.py scripts/lib/*_test.py; do
+            echo "== $t"
+            "$py39" "$t"
+          done
       - name: node tests (consumer layout)
         run: node --test scripts/*.test.mjs
       - name: manifests parse

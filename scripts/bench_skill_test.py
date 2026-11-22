@@ -161,7 +161,8 @@ class TestBenchSkill(unittest.TestCase):
         json.dump(EVALS, ev)
         ev.close()
         out = ev.name + ".out"
-        argv = ["bench_skill.py", "--evals", ev.name, "--with-cmd", '["x"]', "--without-cmd", '["y"]',
+        argv = ["bench_skill.py", "--evals", ev.name, "--with-cmd", json.dumps([sys.executable]),
+                "--without-cmd", json.dumps([sys.executable]),
                 "--reps", "1", "--yes", "--out", out]
         with mock.patch.object(bs, "make_substrate", lambda n: Sub()), \
                 mock.patch.object(bs, "make_judge", lambda n: judge), \
@@ -281,6 +282,75 @@ class TestScriptChecks(unittest.TestCase):
                                    capture_output=True, text=True, cwd=d)
             self.assertNotEqual(r.returncode, 0, check)
             self.assertIn(msg, r.stderr, check)
+
+
+class TestEvalFileShapes(unittest.TestCase):
+    """--evals takes the runner's own list or a skill folder's evals/evals.json (skill-creator's
+    schema, the file empirical-evals.md tells an author to write). Before this the second shape
+    died on a TypeError."""
+
+    def _write(self, d, data):
+        import json
+        path = os.path.join(d, "evals.json")
+        with open(path, "w") as f:
+            json.dump(data, f)
+        return path
+
+    def test_both_shapes_load_to_the_same_list(self):
+        creator = {"skill_name": "x", "evals": [
+            {"id": 1, "prompt": "task one", "expected_output": "o", "expectations": ["e1"]}]}
+        with tempfile.TemporaryDirectory() as d:
+            got = bs.load_evals(self._write(d, creator))
+            self.assertEqual(got[0]["task"], "task one")
+            self.assertEqual((got[0]["id"], got[0]["expectations"]), (1, ["e1"]))
+            self.assertEqual(bs.load_evals(self._write(d, EVALS)), EVALS)
+
+    def test_unmeasurable_shapes_are_refused_naming_the_eval(self):
+        cases = (({"skill_name": "x"}, "non-empty list"),
+                 ([], "non-empty list"),
+                 ([{"id": 1, "expectations": ["e"]}], "eval #1"),
+                 ([{"id": 1, "task": "t", "expectations": []}], "eval #1"),
+                 ([{"id": "f1", "prompt": "t", "expectations": ["e"], "files": ["a.py"]}], "f1"))
+        for data, msg in cases:
+            with tempfile.TemporaryDirectory() as d:
+                with self.assertRaises(SystemExit) as cm:
+                    bs.load_evals(self._write(d, data))
+            self.assertIn(msg, str(cm.exception), data)
+
+
+class TestMissingPrograms(unittest.TestCase):
+    """A machine without the arm's program (the desktop app installs no `claude` on PATH) used to
+    end NO-DATA with exit 0."""
+
+    def test_program_is_argv0_or_the_word_after_an_env_prefix(self):
+        self.assertEqual(bs.program_of(["claude", "-p"]), "claude")
+        self.assertEqual(bs.program_of(["env", "A=1", "B=2", "/opt/claude", "-p"]), "/opt/claude")
+        self.assertEqual(bs.program_of(["env", "-i", "A=1", "claude"]), "claude")
+        self.assertEqual(bs.program_of(["env", "-u", "X", "--unset", "Y", "claude"]), "claude")
+        self.assertIsNone(bs.program_of(["env", "A=1"]))
+        self.assertIsNone(bs.program_of([]))
+
+    def test_only_an_uninstalled_program_is_reported(self):
+        arms = [{"name": "with", "cmd": ["env", "A=1", "claude", "-p"]},
+                {"name": "without", "cmd": ["grok", "-p"]}]
+        got = bs.missing_programs(arms, which=lambda p: "/bin/x" if p == "grok" else None)
+        self.assertEqual(len(got), 1)
+        self.assertIn("--with-cmd: claude is not installed", got[0])
+        self.assertEqual(bs.missing_programs(arms, which=lambda p: "/bin/x"), [])
+
+    def test_cli_refuses_before_any_spend(self):
+        import json, subprocess
+        with tempfile.TemporaryDirectory() as d:
+            ev = os.path.join(d, "evals.json")
+            with open(ev, "w") as f:
+                json.dump(EVALS, f)
+            r = subprocess.run([sys.executable, os.path.join(HERE, "bench_skill.py"), "--evals", ev,
+                                "--with-cmd", '["no-such-program-xyz", "-p"]',
+                                "--without-cmd", '["no-such-program-xyz", "-p"]', "--yes"],
+                               capture_output=True, text=True, cwd=d)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("not installed, not executable, or not on PATH", r.stderr)
+        self.assertNotIn("[cost]", r.stderr)
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))

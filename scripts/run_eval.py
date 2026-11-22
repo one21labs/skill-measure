@@ -31,14 +31,17 @@ VENDORED from anthropics/skills (skill-creator/scripts/run_eval.py), clone dated
   3. `parse_skill_md` vendored inline from skill-creator/scripts/utils.py -- this file has no
      package-relative import and runs standalone: `python3 run_eval.py ...`.
 
-Linux/WSL-only (select.select() on a subprocess pipe fd; no Windows equivalent). Run protocol:
-this plugin's `/bench trigger`, references/description-ablation.md (method home).
+macOS, Linux and WSL (select.select() on a subprocess pipe fd; native Windows has no
+equivalent, and main() refuses there). Run protocol: this plugin's `/bench trigger`,
+references/description-ablation.md (method home).
 """
+from __future__ import annotations  # the `X | None` hints below must import on Python 3.9
 
 import argparse
 import json
 import os
 import select
+import shutil
 import subprocess
 import sys
 import time
@@ -429,6 +432,19 @@ def planned_runs(n_queries: int, runs_per_query: int) -> int:
     return n_queries * runs_per_query
 
 
+def unsupported_here(os_name=os.name, which=shutil.which):
+    """Why this machine cannot run the trigger runner, or None. Checked after the spend prompt and
+    before the first run: without it a missing `claude` program surfaces as every query timing out."""
+    if os_name == "nt":
+        return ("`/bench trigger` needs macOS, Linux or WSL: it reads the `claude` stream with "
+                "select(), which native Windows does not support on pipes.")
+    if which("claude") is None:
+        return ("`claude` is not on PATH. `/bench trigger` drives the Claude Code command-line "
+                "program; the Claude desktop app alone does not put it on PATH. Install the CLI "
+                "(https://code.claude.com/docs/en/setup), then re-run.")
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run trigger evaluation for a skill description")
     parser.add_argument("--eval-set", required=True, help="Path to eval set JSON file")
@@ -453,6 +469,9 @@ def main():
     n_runs = planned_runs(len(eval_set), args.runs_per_query)
     require_yes(args.yes, f"{len(eval_set)} queries x {args.runs_per_query} runs = {n_runs} paid "
                           f"`claude -p` sessions (model={args.model or 'configured default'})")
+    why_not = unsupported_here()
+    if why_not:
+        sys.exit(why_not)
 
     name, original_description, content = parse_skill_md(skill_path)
     description = args.description or original_description
