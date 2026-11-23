@@ -6,7 +6,7 @@ dated runs. (Two more, `2026-07-08-ep-loophole-oos-retest` and `2026-07-08-gradi
 left raw output but no write-up.) They were moved here on 23-Nov-2026, when one21tools was cut down to the
 parts these results support.
 
-Only the write-ups are here. The raw run output (about 21 MB of transcripts, grades and result
+Only the write-ups are here. The raw run output (about 22 MB of transcripts, grades and result
 files) stays in one21tools' history, in the `benchmarks/` folder of commit `0a1834d`, under the
 same directory names. A write-up that names `results.jsonl` or `metadata.json` means the file at
 that commit. Write-ups also cite "ADR NNNN" and "#NNN": those are one21tools' decision records
@@ -50,6 +50,14 @@ writing better code. See `2026-07-17-code-standards-remeasure/README.md`.
 
 What followed from these: one21tools kept `code-standards`, a four-rule `engineering-principles`,
 and two small skills built on independence (`/advise` and `/fresh-check`), and removed the rest.
+
+Two things these findings do not show. `building-skills` was removed for overlapping Anthropic's
+own skill-creator, not for lack of effect: on its own cases it beat the bare model on the current
+models (+0.30 and +0.32, both intervals above zero; `2026-10-12-skill-vs-bare-two-models` and
+`2026-10-12-g8-shortfall`). And no skill has yet passed on blind cases: the October attempt to
+write them mostly produced cases the bare model already passed, so finding 1 has two readings
+the design could not separate (the original cases reward the skill's own wording, or the blind
+cases were simply easier).
 
 ## Cautions
 
