@@ -2,7 +2,7 @@
 """Shared hermetic `claude -p` driver for benchmark harnesses (ADR 0023, issue #110).
 
 One home for the executor plumbing every hermetic benchmark harness needs -- import this instead
-of copying it (issue #110). Stdlib only. The two pre-#110 harnesses in one21tools' benchmarks/
+of copying it (issue #110). Stdlib only. The two pre-#110 harnesses in one21tools' benchmarks/ at commit 0a1834d
 (2026-07-10-tiered-execution-fullgrid/harness.py, 2026-07-10-routing-escalation/checker_harness.py)
 are append-only snapshots and keep their copies.
 

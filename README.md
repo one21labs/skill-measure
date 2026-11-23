@@ -28,11 +28,14 @@ work typed into a session.
 only — the Mac path is untested by us.
 
 **With [one21tools](https://github.com/one21labs/one21tools):** the two install side by side
-(no shared names), and `/bench skill --evals` reads a skill folder's `evals/evals.json` as that
-repo's `building-skills` skill teaches you to write it.
+(no shared names), and `/bench skill --evals` reads a skill folder's `evals/evals.json` in the
+format `skills/bench/references/schemas.md` defines; `code-standards` there is a live example.
+The write-ups of every measurement run on that repo's skills are in `evidence/`, starting with
+what they found taken together.
 
 `ADR NNNN` and `#NNN` cites refer to [one21labs/one21tools](https://github.com/one21labs/one21tools),
-where this plugin was built: its `docs/decisions/` log and issue tracker (plan: one21labs/one21tools#170).
+where this plugin was built: its issue tracker, and its `docs/decisions/` log, which was removed
+on 23-Nov-2026 and is in that repo's history at commit `0a1834d`.
 
 Related work (surveyed 29-Jul-2026): bring-your-own-skill measurement is a crowded lane —
 anthropics/skills' skill-creator is the reference design for paired with/without arms and blind
