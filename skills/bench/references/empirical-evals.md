@@ -1,7 +1,7 @@
 # Empirical Evals — measure that a skill earns its context cost
 
-Read this when a skill needs empirical evidence, not authoring guidance (that is
-one21labs/one21tools:skills/building-skills/references/evaluation-patterns.md, **dev-skills plugin**). A skill's COST side is its chars, which a
+Read this when a skill needs empirical evidence that it works. It does not cover how to write a
+skill. A skill's COST side is its chars, which a
 budget can enforce (one21tools does); this protocol measures the BENEFIT side. Together: a skill is justified when its measured effect is worth its chars.
 
 ## Table of Contents

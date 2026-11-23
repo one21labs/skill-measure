@@ -39,9 +39,7 @@ GROK_TOOLS = "todo_write"
 # inflated met-rate as if it were independent.
 GENERATOR_FAMILY = "anthropic"
 
-# one21labs/one21tools:pdca-workflow/scripts/crosscheck.mjs carries its own copy of this table for
-# a different product. No test ties the two (retired with the split, one21tools ADR 0102): each
-# repo owns its table, and an id either cannot place is 'unknown', which both refuse.
+# An id this table cannot place is 'unknown', which the callers refuse.
 # Open-weight families are listed so a local model wired through `command` can be placed; `llama`
 # is matched last and not inside "ollama", so a runner's name never stands in for the model's.
 _FAMILY_PATTERNS = ((r"claude|anthropic", "anthropic"), (r"grok|xai", "xai"),
